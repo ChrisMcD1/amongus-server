@@ -16,3 +16,11 @@ pub struct RegisterPlayer {
     pub uuid: Uuid,
     pub name: String,
 }
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct StartGame {}
+
+#[derive(Message)]
+#[rtype(result = "bool")]
+pub struct HasGameStarted {}
