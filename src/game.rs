@@ -2,7 +2,9 @@ use crate::game_messages::*;
 use crate::player::*;
 use crate::player_messages::*;
 use actix::prelude::*;
+use rand::prelude::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -81,6 +83,43 @@ impl Handler<StartGame> for Game {
     type Result = ();
     fn handle(&mut self, msg: StartGame, ctx: &mut Self::Context) -> Self::Result {
         self.state = GameState::InGame;
+        let player_count = self.players.len();
+        let mut imposter_count = get_imposter_count(player_count);
+        let mut imposters: HashSet<Uuid> = HashSet::new();
+        let mut player_roles: HashMap<Uuid, Role> = self
+            .players
+            .clone()
+            .iter()
+            .map(|player| (player.0.clone(), Role::Crewmate))
+            .collect();
+        let mut rng = rand::thread_rng();
+        while imposter_count > 0 {
+            let imposter_index = rng.gen_range(0..player_count);
+            let player = self.players.iter().nth(imposter_index).unwrap();
+            if imposters.contains(player.0) {
+                continue;
+            }
+            imposters.insert(player.0.clone());
+            player_roles.insert(player.0.clone(), Role::Imposter);
+            imposter_count = imposter_count - 1;
+        }
+        player_roles.into_iter().for_each(|role| {
+            self.players
+                .get(&role.0)
+                .unwrap()
+                .do_send(SetRole { role: role.1 });
+        });
+
         self.send_message_to_all_players("Game has begun!");
+    }
+}
+
+fn get_imposter_count(player_count: usize) -> usize {
+    if player_count <= 4 {
+        return 1;
+    } else if player_count <= 7 {
+        return 2;
+    } else {
+        return 3;
     }
 }

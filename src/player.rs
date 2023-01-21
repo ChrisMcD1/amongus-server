@@ -5,7 +5,7 @@ use crate::player_websocket::*;
 use actix::dev::*;
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Role {
     Imposter,
     Crewmate,
@@ -30,9 +30,6 @@ impl Player {
             uuid: Uuid::new_v4(),
         }
     }
-    pub fn assign_role(&mut self, role: Role) {
-        self.role = Some(role);
-    }
 }
 
 impl Actor for Player {
@@ -47,6 +44,19 @@ impl Handler<Disconnected> for Player {
             name: self.name.clone(),
         });
         ctx.stop();
+    }
+}
+
+impl Handler<SetRole> for Player {
+    type Result = ();
+    fn handle(&mut self, msg: SetRole, ctx: &mut Self::Context) -> Self::Result {
+        self.role = Some(msg.role);
+        self.websocket
+            .as_ref()
+            .unwrap()
+            .do_send(OutboundChatMessage {
+                contents: format!("You have been assigned a role of {:#?}", msg.role),
+            })
     }
 }
 
