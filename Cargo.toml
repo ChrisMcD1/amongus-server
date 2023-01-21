@@ -1,0 +1,13 @@
+[package]
+name = "among-us-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web="4" 
+actix-web-actors="4"
+actix = "0.13.0"
+uuid = { version = "0.8", features = ["v4", "serde"] }
+serde = {version = "1.0", features = ["derive"]}
