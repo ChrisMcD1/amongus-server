@@ -11,5 +11,5 @@ pub enum IncomingWebsocketMessage {
 #[rtype(result = "()")]
 pub struct KillPlayer {
     pub target: Uuid,
-    pub imposter: Uuid,
+    pub initiator: Uuid,
 }

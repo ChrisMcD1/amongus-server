@@ -85,7 +85,17 @@ impl Handler<KillPlayer> for Game {
     type Result = ();
     fn handle(&mut self, msg: KillPlayer, ctx: &mut Self::Context) -> Self::Result {
         let target = self.players.get(&msg.target).unwrap();
-        target.do_send(PlayerDied {})
+        target.do_send(msg);
+    }
+}
+
+impl Handler<PlayerInvalidAction> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: PlayerInvalidAction, ctx: &mut Self::Context) -> Self::Result {
+        self.players
+            .get(&msg.id)
+            .unwrap()
+            .do_send(OutgoingWebsocketMessage::InvalidAction(msg.error));
     }
 }
 
@@ -117,9 +127,7 @@ impl Handler<StartGame> for Game {
             self.players
                 .get(&role.0)
                 .unwrap()
-                .do_send(OutgoingWebsocketMessage::PlayerRole(SetRole {
-                    role: role.1,
-                }));
+                .do_send(SetRole { role: role.1 });
         });
 
         self.send_message_to_users(OutgoingWebsocketMessage::GameState(GameState {

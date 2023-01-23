@@ -43,13 +43,33 @@ impl Player {
             ctx.ping(b"PING");
         });
     }
-    fn handle_incoming_message(&self, msg: String) {
-        let msg: IncomingWebsocketMessage =
-            serde_json::from_str(&msg).expect("Unsupported message type");
+    fn handle_valid_incoming_message(
+        &self,
+        msg: IncomingWebsocketMessage,
+        ctx: &mut ws::WebsocketContext<Self>,
+    ) {
         match msg {
-            IncomingWebsocketMessage::KillPlayer(kill) => {
-                self.game.do_send(kill);
-            }
+            IncomingWebsocketMessage::KillPlayer(kill) => match self.role.unwrap() {
+                Role::Imposter => {
+                    self.game.do_send(kill);
+                }
+                _ => {
+                    ctx.address()
+                        .do_send(OutgoingWebsocketMessage::InvalidAction(
+                            "Good try, but you can only kill people if you are an imposter!"
+                                .to_string(),
+                        ));
+                }
+            },
+        }
+    }
+    fn handle_incoming_message(&self, msg: String, ctx: &mut ws::WebsocketContext<Self>) {
+        let msg = serde_json::from_str::<IncomingWebsocketMessage>(&msg);
+        match msg {
+            Ok(msg) => self.handle_valid_incoming_message(msg, ctx),
+            Err(err) => ctx
+                .address()
+                .do_send(OutgoingWebsocketMessage::InvalidAction(err.to_string())),
         }
     }
 }
@@ -71,6 +91,15 @@ impl Actor for Player {
     }
 }
 
+impl Handler<SetRole> for Player {
+    type Result = ();
+    fn handle(&mut self, msg: SetRole, ctx: &mut Self::Context) -> Self::Result {
+        self.role = Some(msg.role.clone());
+        ctx.address()
+            .do_send(OutgoingWebsocketMessage::PlayerRole(msg));
+    }
+}
+
 impl Handler<Disconnected> for Player {
     type Result = ();
     fn handle(&mut self, msg: Disconnected, ctx: &mut Self::Context) -> Self::Result {
@@ -85,16 +114,26 @@ impl Handler<Disconnected> for Player {
 impl Handler<OutgoingWebsocketMessage> for Player {
     type Result = ();
     fn handle(&mut self, msg: OutgoingWebsocketMessage, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(serde_json::to_string(&msg).unwrap());
+        let msg_serialized = serde_json::to_string(&msg).unwrap();
+        println!("Sending to {:?} msg: {:?}", self.name, msg_serialized);
+        ctx.text(msg_serialized);
     }
 }
 
-impl Handler<PlayerDied> for Player {
+impl Handler<KillPlayer> for Player {
     type Result = ();
-    fn handle(&mut self, msg: PlayerDied, ctx: &mut Self::Context) -> Self::Result {
-        self.alive = false;
-        ctx.address()
-            .do_send(OutgoingWebsocketMessage::PlayerDied(msg));
+    fn handle(&mut self, msg: KillPlayer, ctx: &mut Self::Context) -> Self::Result {
+        match self.role.unwrap() {
+            Role::Crewmate => {
+                self.alive = false;
+                ctx.address()
+                    .do_send(OutgoingWebsocketMessage::PlayerDied(PlayerDied {}));
+            }
+            Role::Imposter => self.game.do_send(PlayerInvalidAction {
+                id: msg.initiator,
+                error: "You cannot kill a fellow imposter, silly".to_string(),
+            }),
+        }
     }
 }
 
@@ -119,7 +158,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Player {
             }
             Ok(ws::Message::Nop) => {}
             Ok(ws::Message::Text(s)) => {
-                self.handle_incoming_message(s.to_string());
+                self.handle_incoming_message(s.to_string(), ctx);
             }
 
             Err(e) => panic!("{}", e),

@@ -28,3 +28,10 @@ pub struct HasGameStarted {}
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct Disconnected {}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct PlayerInvalidAction {
+    pub id: Uuid,
+    pub error: String,
+}
