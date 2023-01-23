@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct PlayerDisconnected {
-    pub uuid: Uuid,
+    pub id: Uuid,
     pub name: String,
 }
 
@@ -13,7 +13,7 @@ pub struct PlayerDisconnected {
 #[rtype(result = "()")]
 pub struct RegisterPlayer {
     pub player: Addr<Player>,
-    pub uuid: Uuid,
+    pub id: Uuid,
     pub name: String,
 }
 

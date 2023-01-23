@@ -1,14 +1,17 @@
 use crate::game_messages::*;
 use crate::player::*;
 use crate::player_messages::*;
+use crate::player_websocket_messages::*;
 use actix::prelude::*;
 use rand::prelude::*;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt::Debug;
 use uuid::Uuid;
 
-#[derive(Debug)]
-enum GameState {
+#[derive(Debug, Serialize, Clone)]
+pub enum GameState {
     Lobby,
     InGame,
 }
@@ -29,12 +32,23 @@ impl Default for Game {
 }
 
 impl Game {
-    fn send_message_to_all_players(&self, msg: &str) {
+    fn send_chat_message_to_all_players(&self, msg: &str) {
         self.players.iter().for_each(|player| {
-            player.1.do_send(OutboundChatMessage {
+            player.1.do_send(ChatMessage {
                 contents: msg.to_string(),
             })
         })
+    }
+}
+
+impl Game {
+    fn send_message_to_users<T>(&self, msg: T)
+    where
+        T: Message<Result = ()> + Serialize + Debug + Clone + Send + 'static,
+    {
+        self.players
+            .iter()
+            .for_each(|player| player.1.do_send(msg.clone()))
     }
 }
 
@@ -56,8 +70,12 @@ impl Handler<PrintGameState> for Game {
 impl Handler<PlayerDisconnected> for Game {
     type Result = ();
     fn handle(&mut self, msg: PlayerDisconnected, ctx: &mut Self::Context) -> Self::Result {
-        self.players.remove(&msg.uuid);
-        self.send_message_to_all_players(&format!("{} has disconnected.", msg.name));
+        self.players.remove(&msg.id);
+        self.send_message_to_users(PlayerStatusMessage {
+            username: msg.name,
+            id: msg.id,
+            status: PlayerStatus::Disconnected,
+        });
     }
 }
 
@@ -74,8 +92,12 @@ impl Handler<HasGameStarted> for Game {
 impl Handler<RegisterPlayer> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayer, ctx: &mut Self::Context) -> Self::Result {
-        self.players.insert(msg.uuid, msg.player);
-        self.send_message_to_all_players(&format!("{} has connected.", msg.name));
+        self.players.insert(msg.id, msg.player);
+        self.send_message_to_users(PlayerStatusMessage {
+            username: msg.name,
+            id: msg.id,
+            status: PlayerStatus::New,
+        });
     }
 }
 
@@ -110,7 +132,9 @@ impl Handler<StartGame> for Game {
                 .do_send(SetRole { role: role.1 });
         });
 
-        self.send_message_to_all_players("Game has begun!");
+        self.send_message_to_users(GameStateMessage {
+            state: GameState::InGame,
+        });
     }
 }
 

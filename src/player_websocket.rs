@@ -5,6 +5,8 @@ use actix::ActorContext;
 use actix::AsyncContext;
 use actix::{Actor, Addr, Running, StreamHandler};
 use actix_web_actors::ws;
+use serde::Serialize;
+use std::fmt::Debug;
 use std::time::{Duration, Instant};
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -14,6 +16,7 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 // of the websocket messages, so that the Player struct can focus entirely on business logic
 // This struct should only know how to serialize and deserialize, and should not know what the
 // messages actually mean.
+#[derive(Debug)]
 pub struct PlayerWebsocket {
     player: Addr<Player>,
     heartbeat: Instant,
@@ -58,11 +61,14 @@ impl PlayerWebsocket {
     }
 }
 
-impl Handler<OutboundChatMessage> for PlayerWebsocket {
+impl<T> Handler<T> for PlayerWebsocket
+where
+    T: Message<Result = ()> + Serialize + Debug,
+{
     type Result = ();
-    fn handle(&mut self, msg: OutboundChatMessage, ctx: &mut Self::Context) -> Self::Result {
-        println!("Should be sending outbound message of {:?}", msg.contents);
-        ctx.text(msg.contents);
+    fn handle(&mut self, msg: T, ctx: &mut Self::Context) -> Self::Result {
+        println!("Should be sending outbound message of {:?}", msg);
+        ctx.text(serde_json::to_string(&msg).unwrap());
     }
 }
 
@@ -73,7 +79,7 @@ where
 {
     fn handle(self, ctx: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
         if let Some(tx) = tx {
-            tx.send(self);
+            tx.send(self).unwrap();
         }
     }
 }

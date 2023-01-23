@@ -9,6 +9,7 @@ mod game_messages;
 mod player;
 mod player_messages;
 mod player_websocket;
+mod player_websocket_messages;
 mod routes;
 
 #[actix_web::main]

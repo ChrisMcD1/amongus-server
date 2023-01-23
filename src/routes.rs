@@ -34,7 +34,7 @@ pub async fn join_game(
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
     }
     let player = Player::new(&params.username, game.get_ref().clone());
-    let player_uuid = player.uuid.clone();
+    let player_uuid = player.id.clone();
     let player_name = player.name.clone();
     let player = player.start();
 
@@ -43,7 +43,7 @@ pub async fn join_game(
     let resp = ws::start(player_websocket, &req, stream).unwrap();
 
     game.do_send(RegisterPlayer {
-        uuid: player_uuid,
+        id: player_uuid,
         name: player_name,
         player,
     });
@@ -55,8 +55,8 @@ pub async fn join_game(
 
 #[post("/start-game")]
 pub async fn start_game(
-    req: HttpRequest,
-    stream: Payload,
+    _req: HttpRequest,
+    _stream: Payload,
     game: Data<Addr<Game>>,
 ) -> impl Responder {
     game.do_send(StartGame {});

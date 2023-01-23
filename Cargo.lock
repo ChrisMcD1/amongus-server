@@ -286,6 +286,7 @@ dependencies = [
  "actix-web-actors",
  "rand",
  "serde",
+ "serde_json",
  "uuid",
 ]
 
