@@ -87,6 +87,10 @@ impl Actor for Player {
     }
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         println!("Stopping websocket");
+        self.game.do_send(PlayerDisconnected {
+            id: self.id,
+            name: self.name.clone(),
+        });
         Running::Stop
     }
 }
@@ -97,17 +101,6 @@ impl Handler<SetRole> for Player {
         self.role = Some(msg.role.clone());
         ctx.address()
             .do_send(OutgoingWebsocketMessage::PlayerRole(msg));
-    }
-}
-
-impl Handler<Disconnected> for Player {
-    type Result = ();
-    fn handle(&mut self, msg: Disconnected, ctx: &mut Self::Context) -> Self::Result {
-        self.game.do_send(PlayerDisconnected {
-            id: self.id,
-            name: self.name.clone(),
-        });
-        ctx.stop();
     }
 }
 
