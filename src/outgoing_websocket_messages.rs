@@ -12,7 +12,15 @@ pub enum OutgoingWebsocketMessage {
     GameState(GameState),
     PlayerRole(SetRole),
     PlayerDied(PlayerDied),
+    SuccessfulKill(),
     InvalidAction(String),
+}
+
+#[derive(Message, Debug, Serialize, Clone)]
+#[rtype(result = "()")]
+pub struct ForwardedOutgoingWebsocketMessage {
+    pub destination: Uuid,
+    pub msg: OutgoingWebsocketMessage,
 }
 
 #[derive(Message, Debug, Serialize, Clone)]

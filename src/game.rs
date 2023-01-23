@@ -99,6 +99,17 @@ impl Handler<PlayerInvalidAction> for Game {
     }
 }
 
+impl Handler<ForwardedOutgoingWebsocketMessage> for Game {
+    type Result = ();
+    fn handle(
+        &mut self,
+        msg: ForwardedOutgoingWebsocketMessage,
+        ctx: &mut Self::Context,
+    ) -> Self::Result {
+        self.players.get(&msg.destination).unwrap().do_send(msg.msg);
+    }
+}
+
 impl Handler<StartGame> for Game {
     type Result = ();
     fn handle(&mut self, msg: StartGame, ctx: &mut Self::Context) -> Self::Result {

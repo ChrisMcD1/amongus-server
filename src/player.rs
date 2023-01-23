@@ -134,6 +134,10 @@ impl Handler<KillPlayer> for Player {
                     });
                     return;
                 }
+                self.game.do_send(ForwardedOutgoingWebsocketMessage {
+                    destination: msg.initiator,
+                    msg: OutgoingWebsocketMessage::SuccessfulKill(),
+                });
                 self.alive = false;
                 ctx.address()
                     .do_send(OutgoingWebsocketMessage::PlayerDied(PlayerDied {}));
