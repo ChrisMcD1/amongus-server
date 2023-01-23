@@ -1,6 +1,5 @@
-use crate::game_messages::*;
-use crate::player_messages::*;
-use crate::player_websocket_messages::*;
+use crate::internal_messages::*;
+use crate::websocket_messages::*;
 use crate::Game;
 use actix::dev::*;
 use actix_web_actors::ws;
@@ -11,12 +10,6 @@ use uuid::Uuid;
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
-
-#[derive(Debug, Clone, Copy, Serialize)]
-pub enum Role {
-    Imposter,
-    Crewmate,
-}
 
 #[derive(Debug)]
 pub struct Player {

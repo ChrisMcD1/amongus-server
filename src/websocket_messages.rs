@@ -2,8 +2,6 @@ use actix::prelude::*;
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::game::GameState;
-
 #[derive(Message, Debug, Serialize)]
 #[rtype(result = "()")]
 #[serde(tag = "type")]
@@ -32,4 +30,22 @@ pub enum PlayerStatus {
 #[serde(tag = "type")]
 pub struct GameStateMessage {
     pub state: GameState,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub enum GameState {
+    Lobby,
+    InGame,
+}
+
+#[derive(Message, Debug, Serialize)]
+#[rtype(result = "()")]
+pub struct SetRole {
+    pub role: Role,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub enum Role {
+    Imposter,
+    Crewmate,
 }

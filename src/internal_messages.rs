@@ -24,3 +24,7 @@ pub struct StartGame {}
 #[derive(Message)]
 #[rtype(result = "bool")]
 pub struct HasGameStarted {}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct Disconnected {}

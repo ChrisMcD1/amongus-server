@@ -1,7 +1,6 @@
-use crate::game_messages::*;
+use crate::internal_messages::*;
 use crate::player::*;
-use crate::player_messages::*;
-use crate::player_websocket_messages::*;
+use crate::websocket_messages::*;
 use actix::prelude::*;
 use rand::prelude::*;
 use serde::Serialize;
@@ -9,12 +8,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use uuid::Uuid;
-
-#[derive(Debug, Serialize, Clone)]
-pub enum GameState {
-    Lobby,
-    InGame,
-}
 
 #[derive(Debug)]
 pub struct Game {

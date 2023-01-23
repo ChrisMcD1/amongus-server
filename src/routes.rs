@@ -1,5 +1,5 @@
 use crate::game::*;
-use crate::game_messages::*;
+use crate::internal_messages::*;
 use crate::Player;
 use actix::prelude::*;
 use actix_web::post;
