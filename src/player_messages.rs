@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[rtype(result = "()")]
 pub struct Disconnected {}
 
-#[derive(Message)]
+#[derive(Message, Debug, Serialize)]
 #[rtype(result = "()")]
 pub struct SetRole {
     pub role: Role,

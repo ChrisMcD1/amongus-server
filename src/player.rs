@@ -12,7 +12,7 @@ use uuid::Uuid;
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum Role {
     Imposter,
     Crewmate,
@@ -40,7 +40,7 @@ impl Player {
     fn heartbeat(&self, ctx: &mut ws::WebsocketContext<Self>) {
         ctx.run_interval(HEARTBEAT_INTERVAL, |connection, ctx| {
             if Instant::now().duration_since(connection.heartbeat) > CLIENT_TIMEOUT {
-                println!("Disconnecting from a faild hearatbeat");
+                println!("Disconnecting from a failed hearatbeat");
                 ctx.stop();
                 return;
             }
@@ -78,14 +78,6 @@ impl Handler<Disconnected> for Player {
             name: self.name.clone(),
         });
         ctx.stop();
-    }
-}
-
-impl Handler<SetRole> for Player {
-    type Result = ();
-    fn handle(&mut self, msg: SetRole, ctx: &mut Self::Context) -> Self::Result {
-        self.role = Some(msg.role);
-        ctx.text(format!("You have been assigned a role of {:#?}", msg.role));
     }
 }
 
