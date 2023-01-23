@@ -15,6 +15,7 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 pub struct Player {
     pub role: Option<Role>,
     pub name: String,
+    alive: bool,
     game: Addr<Game>,
     heartbeat: Instant,
     pub id: Uuid,
@@ -25,6 +26,7 @@ impl Player {
         Player {
             role: None,
             name: name.to_string(),
+            alive: true,
             game,
             heartbeat: Instant::now(),
             id: Uuid::new_v4(),

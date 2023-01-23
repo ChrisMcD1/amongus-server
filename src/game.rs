@@ -57,7 +57,7 @@ impl Handler<PlayerDisconnected> for Game {
         self.send_message_to_users(PlayerStatusMessage {
             username: msg.name,
             id: msg.id,
-            status: PlayerStatus::Disconnected,
+            status: PlayerConnectionStatus::Disconnected,
         });
     }
 }
@@ -79,7 +79,7 @@ impl Handler<RegisterPlayer> for Game {
         self.send_message_to_users(PlayerStatusMessage {
             username: msg.name,
             id: msg.id,
-            status: PlayerStatus::New,
+            status: PlayerConnectionStatus::New,
         });
     }
 }

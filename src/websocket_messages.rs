@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Message, Debug, Serialize)]
@@ -15,11 +15,11 @@ pub struct ChatMessage {
 pub struct PlayerStatusMessage {
     pub username: String,
     pub id: Uuid,
-    pub status: PlayerStatus,
+    pub status: PlayerConnectionStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub enum PlayerStatus {
+pub enum PlayerConnectionStatus {
     New,
     Disconnected,
     Reconnected,
@@ -48,4 +48,11 @@ pub struct SetRole {
 pub enum Role {
     Imposter,
     Crewmate,
+}
+
+#[derive(Message, Debug, Deserialize)]
+#[rtype(result = "()")]
+pub struct KillPlayer {
+    pub target: Uuid,
+    pub imposter: Uuid,
 }
