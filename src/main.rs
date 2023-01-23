@@ -5,10 +5,11 @@ use routes::*;
 
 use player::*;
 mod game;
+mod incoming_websocket_messages;
 mod internal_messages;
+mod outgoing_websocket_messages;
 mod player;
 mod routes;
-mod websocket_messages;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

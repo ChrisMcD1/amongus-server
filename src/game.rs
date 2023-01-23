@@ -1,9 +1,8 @@
 use crate::internal_messages::*;
+use crate::outgoing_websocket_messages::*;
 use crate::player::*;
-use crate::websocket_messages::*;
 use actix::prelude::*;
 use rand::prelude::*;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -11,24 +10,21 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Game {
-    state: GameState,
+    state: GameStateEnum,
     players: HashMap<Uuid, Addr<Player>>,
 }
 
 impl Default for Game {
     fn default() -> Self {
         Game {
-            state: GameState::Lobby,
+            state: GameStateEnum::Lobby,
             players: HashMap::new(),
         }
     }
 }
 
 impl Game {
-    fn send_message_to_users<T>(&self, msg: T)
-    where
-        T: Message<Result = ()> + Serialize + Debug + Clone + Send + 'static,
-    {
+    fn send_message_to_users(&self, msg: OutgoingWebsocketMessage) {
         self.players
             .iter()
             .for_each(|player| player.1.do_send(msg.clone()))
@@ -54,11 +50,11 @@ impl Handler<PlayerDisconnected> for Game {
     type Result = ();
     fn handle(&mut self, msg: PlayerDisconnected, ctx: &mut Self::Context) -> Self::Result {
         self.players.remove(&msg.id);
-        self.send_message_to_users(PlayerStatusMessage {
+        self.send_message_to_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: msg.name,
             id: msg.id,
             status: PlayerConnectionStatus::Disconnected,
-        });
+        }));
     }
 }
 
@@ -66,8 +62,8 @@ impl Handler<HasGameStarted> for Game {
     type Result = bool;
     fn handle(&mut self, msg: HasGameStarted, ctx: &mut Self::Context) -> Self::Result {
         match self.state {
-            GameState::Lobby => false,
-            GameState::InGame => true,
+            GameStateEnum::Lobby => false,
+            GameStateEnum::InGame => true,
         }
     }
 }
@@ -76,18 +72,18 @@ impl Handler<RegisterPlayer> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayer, ctx: &mut Self::Context) -> Self::Result {
         self.players.insert(msg.id, msg.player);
-        self.send_message_to_users(PlayerStatusMessage {
+        self.send_message_to_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: msg.name,
             id: msg.id,
             status: PlayerConnectionStatus::New,
-        });
+        }));
     }
 }
 
 impl Handler<StartGame> for Game {
     type Result = ();
     fn handle(&mut self, msg: StartGame, ctx: &mut Self::Context) -> Self::Result {
-        self.state = GameState::InGame;
+        self.state = GameStateEnum::InGame;
         let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);
         let mut imposters: HashSet<Uuid> = HashSet::new();
@@ -112,12 +108,14 @@ impl Handler<StartGame> for Game {
             self.players
                 .get(&role.0)
                 .unwrap()
-                .do_send(SetRole { role: role.1 });
+                .do_send(OutgoingWebsocketMessage::PlayerRole(SetRole {
+                    role: role.1,
+                }));
         });
 
-        self.send_message_to_users(GameStateMessage {
-            state: GameState::InGame,
-        });
+        self.send_message_to_users(OutgoingWebsocketMessage::GameState(GameState {
+            state: GameStateEnum::InGame,
+        }));
     }
 }
 

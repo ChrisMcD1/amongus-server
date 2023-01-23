@@ -1,9 +1,8 @@
 use crate::internal_messages::*;
-use crate::websocket_messages::*;
+use crate::outgoing_websocket_messages::*;
 use crate::Game;
 use actix::dev::*;
 use actix_web_actors::ws;
-use serde::Serialize;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
@@ -43,7 +42,7 @@ impl Player {
             ctx.ping(b"PING");
         });
     }
-    fn handle_message(&self, msg: String) {
+    fn handle_incoming_message(&self, msg: String) {
         println!("Got message: {msg}");
     }
 }
@@ -76,12 +75,9 @@ impl Handler<Disconnected> for Player {
     }
 }
 
-impl<T> Handler<T> for Player
-where
-    T: Message<Result = ()> + Serialize + Debug + Send + 'static,
-{
+impl Handler<OutgoingWebsocketMessage> for Player {
     type Result = ();
-    fn handle(&mut self, msg: T, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: OutgoingWebsocketMessage, ctx: &mut Self::Context) -> Self::Result {
         ctx.text(serde_json::to_string(&msg).unwrap());
     }
 }
@@ -107,7 +103,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Player {
             }
             Ok(ws::Message::Nop) => {}
             Ok(ws::Message::Text(s)) => {
-                self.handle_message(s.to_string());
+                self.handle_incoming_message(s.to_string());
             }
 
             Err(e) => panic!("{}", e),

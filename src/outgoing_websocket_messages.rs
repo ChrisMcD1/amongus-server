@@ -1,18 +1,25 @@
 use actix::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use uuid::Uuid;
 
-#[derive(Message, Debug, Serialize)]
+#[derive(Message, Debug, Serialize, Clone)]
 #[rtype(result = "()")]
-#[serde(tag = "type")]
+pub enum OutgoingWebsocketMessage {
+    ChatMessage(ChatMessage),
+    PlayerStatus(PlayerStatus),
+    GameState(GameState),
+    PlayerRole(SetRole),
+}
+
+#[derive(Message, Debug, Serialize, Clone)]
+#[rtype(result = "()")]
 pub struct ChatMessage {
     pub contents: String,
 }
 
 #[derive(Message, Debug, Serialize, Clone)]
 #[rtype(result = "()")]
-#[serde(tag = "type")]
-pub struct PlayerStatusMessage {
+pub struct PlayerStatus {
     pub username: String,
     pub id: Uuid,
     pub status: PlayerConnectionStatus,
@@ -27,18 +34,17 @@ pub enum PlayerConnectionStatus {
 
 #[derive(Message, Debug, Serialize, Clone)]
 #[rtype(result = "()")]
-#[serde(tag = "type")]
-pub struct GameStateMessage {
-    pub state: GameState,
+pub struct GameState {
+    pub state: GameStateEnum,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub enum GameState {
+pub enum GameStateEnum {
     Lobby,
     InGame,
 }
 
-#[derive(Message, Debug, Serialize)]
+#[derive(Message, Debug, Serialize, Clone)]
 #[rtype(result = "()")]
 pub struct SetRole {
     pub role: Role,
@@ -48,11 +54,4 @@ pub struct SetRole {
 pub enum Role {
     Imposter,
     Crewmate,
-}
-
-#[derive(Message, Debug, Deserialize)]
-#[rtype(result = "()")]
-pub struct KillPlayer {
-    pub target: Uuid,
-    pub imposter: Uuid,
 }
