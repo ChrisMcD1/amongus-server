@@ -36,17 +36,7 @@ pub async fn join_game(
     let player = Player::new(&params.username, game.get_ref().clone());
     let player_uuid = player.id.clone();
     let player_name = player.name.clone();
-    let player = player.start();
-
-    let player_websocket = PlayerWebsocket::new(player.clone());
-
-    let resp = ws::start(player_websocket, &req, stream).unwrap();
-
-    game.do_send(RegisterPlayer {
-        id: player_uuid,
-        name: player_name,
-        player,
-    });
+    let resp = ws::start(player, &req, stream).unwrap();
 
     game.do_send(PrintGameState {});
 
