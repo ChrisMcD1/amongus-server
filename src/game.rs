@@ -32,16 +32,6 @@ impl Default for Game {
 }
 
 impl Game {
-    fn send_chat_message_to_all_players(&self, msg: &str) {
-        self.players.iter().for_each(|player| {
-            player.1.do_send(ChatMessage {
-                contents: msg.to_string(),
-            })
-        })
-    }
-}
-
-impl Game {
     fn send_message_to_users<T>(&self, msg: T)
     where
         T: Message<Result = ()> + Serialize + Debug + Clone + Send + 'static,
