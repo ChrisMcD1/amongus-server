@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use actix::prelude::*;
 use serde::Serialize;
 use uuid::Uuid;
@@ -58,6 +60,33 @@ pub struct SetRole {
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub enum Role {
-    Imposter,
+    Imposter(Imposter),
     Crewmate,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct Imposter {
+    #[serde(with = "approx_instant")]
+    last_kill_time: Instant,
+}
+
+mod approx_instant {
+    use serde::{Serialize, Serializer};
+    use std::time::Instant;
+
+    pub fn serialize<S>(instant: &Instant, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let duration = instant.elapsed();
+        duration.serialize(serializer)
+    }
+}
+
+impl Imposter {
+    pub fn new() -> Self {
+        Imposter {
+            last_kill_time: Instant::now(),
+        }
+    }
 }

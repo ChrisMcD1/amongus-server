@@ -50,7 +50,7 @@ impl Player {
     ) {
         match msg {
             IncomingWebsocketMessage::KillPlayer(kill) => match self.role.unwrap() {
-                Role::Imposter => {
+                Role::Imposter(_) => {
                     self.game.do_send(kill);
                 }
                 _ => {
@@ -122,7 +122,7 @@ impl Handler<KillPlayer> for Player {
                 ctx.address()
                     .do_send(OutgoingWebsocketMessage::PlayerDied(PlayerDied {}));
             }
-            Role::Imposter => self.game.do_send(PlayerInvalidAction {
+            Role::Imposter(_) => self.game.do_send(PlayerInvalidAction {
                 id: msg.initiator,
                 error: "You cannot kill a fellow imposter, silly".to_string(),
             }),

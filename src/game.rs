@@ -120,7 +120,7 @@ impl Handler<StartGame> for Game {
                 continue;
             }
             imposters.insert(player.0.clone());
-            player_roles.insert(player.0.clone(), Role::Imposter);
+            player_roles.insert(player.0.clone(), Role::Imposter(Imposter::new()));
             imposter_count = imposter_count - 1;
         }
         player_roles.into_iter().for_each(|role| {
