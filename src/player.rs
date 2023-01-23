@@ -1,6 +1,5 @@
 use crate::game_messages::*;
 use crate::player_messages::*;
-use crate::player_websocket::*;
 use crate::player_websocket_messages::*;
 use crate::Game;
 use actix::dev::*;
@@ -23,7 +22,6 @@ pub enum Role {
 pub struct Player {
     pub role: Option<Role>,
     pub name: String,
-    websocket: Option<Addr<PlayerWebsocket>>,
     game: Addr<Game>,
     heartbeat: Instant,
     pub id: Uuid,
@@ -36,7 +34,6 @@ impl Player {
             name: name.to_string(),
             game,
             heartbeat: Instant::now(),
-            websocket: None,
             id: Uuid::new_v4(),
         }
     }
@@ -88,16 +85,7 @@ impl Handler<SetRole> for Player {
     type Result = ();
     fn handle(&mut self, msg: SetRole, ctx: &mut Self::Context) -> Self::Result {
         self.role = Some(msg.role);
-        self.websocket.as_ref().unwrap().do_send(ChatMessage {
-            contents: format!("You have been assigned a role of {:#?}", msg.role),
-        })
-    }
-}
-
-impl Handler<RegisterWebSocket> for Player {
-    type Result = ();
-    fn handle(&mut self, msg: RegisterWebSocket, ctx: &mut Self::Context) -> Self::Result {
-        self.websocket = Some(msg.socket);
+        ctx.text(format!("You have been assigned a role of {:#?}", msg.role));
     }
 }
 
@@ -107,9 +95,7 @@ where
 {
     type Result = ();
     fn handle(&mut self, msg: T, ctx: &mut Self::Context) -> Self::Result {
-        if let Some(websocket) = &self.websocket {
-            websocket.do_send(msg);
-        }
+        ctx.text(serde_json::to_string(&msg).unwrap());
     }
 }
 
