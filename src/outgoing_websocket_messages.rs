@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use serde::Serialize;
@@ -83,10 +83,21 @@ mod approx_instant {
     }
 }
 
+const KILL_COOLDOWN: Duration = Duration::from_secs(60);
+
 impl Imposter {
     pub fn new() -> Self {
         Imposter {
             last_kill_time: Instant::now(),
         }
+    }
+    pub fn kill_is_off_cooldown(&self) -> bool {
+        self.last_kill_time.elapsed() > KILL_COOLDOWN
+    }
+    pub fn cooldown_remaining(&self) -> Duration {
+        KILL_COOLDOWN - self.last_kill_time.elapsed()
+    }
+    pub fn reset_kill_cooldown(&mut self) {
+        self.last_kill_time = Instant::now();
     }
 }

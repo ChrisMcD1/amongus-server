@@ -50,7 +50,16 @@ impl Player {
     ) {
         match msg {
             IncomingWebsocketMessage::KillPlayer(kill) => match self.role.unwrap() {
-                Role::Imposter(_) => {
+                Role::Imposter(mut imposter) => {
+                    if !imposter.kill_is_off_cooldown() {
+                        ctx.address()
+                            .do_send(OutgoingWebsocketMessage::InvalidAction(format!(
+                                "You are not off kill cooldown yet. Try again in {:#?}",
+                                imposter.cooldown_remaining()
+                            )));
+                        return;
+                    }
+                    imposter.reset_kill_cooldown();
                     self.game.do_send(kill);
                 }
                 _ => {
@@ -118,6 +127,13 @@ impl Handler<KillPlayer> for Player {
     fn handle(&mut self, msg: KillPlayer, ctx: &mut Self::Context) -> Self::Result {
         match self.role.unwrap() {
             Role::Crewmate => {
+                if !self.alive {
+                    self.game.do_send(PlayerInvalidAction {
+                        id: msg.initiator,
+                        error: format!("You cannot kill {} since they are already dead", self.name),
+                    });
+                    return;
+                }
                 self.alive = false;
                 ctx.address()
                     .do_send(OutgoingWebsocketMessage::PlayerDied(PlayerDied {}));
