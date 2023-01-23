@@ -1,3 +1,4 @@
+use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use crate::Game;
@@ -43,7 +44,13 @@ impl Player {
         });
     }
     fn handle_incoming_message(&self, msg: String) {
-        println!("Got message: {msg}");
+        let msg: IncomingWebsocketMessage =
+            serde_json::from_str(&msg).expect("Unsupported message type");
+        match msg {
+            IncomingWebsocketMessage::KillPlayer(kill) => {
+                self.game.do_send(kill);
+            }
+        }
     }
 }
 
@@ -79,6 +86,15 @@ impl Handler<OutgoingWebsocketMessage> for Player {
     type Result = ();
     fn handle(&mut self, msg: OutgoingWebsocketMessage, ctx: &mut Self::Context) -> Self::Result {
         ctx.text(serde_json::to_string(&msg).unwrap());
+    }
+}
+
+impl Handler<PlayerDied> for Player {
+    type Result = ();
+    fn handle(&mut self, msg: PlayerDied, ctx: &mut Self::Context) -> Self::Result {
+        self.alive = false;
+        ctx.address()
+            .do_send(OutgoingWebsocketMessage::PlayerDied(msg));
     }
 }
 

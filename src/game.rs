@@ -1,3 +1,4 @@
+use crate::incoming_websocket_messages::KillPlayer;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use crate::player::*;
@@ -77,6 +78,14 @@ impl Handler<RegisterPlayer> for Game {
             id: msg.id,
             status: PlayerConnectionStatus::New,
         }));
+    }
+}
+
+impl Handler<KillPlayer> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: KillPlayer, ctx: &mut Self::Context) -> Self::Result {
+        let target = self.players.get(&msg.target).unwrap();
+        target.do_send(PlayerDied {})
     }
 }
 

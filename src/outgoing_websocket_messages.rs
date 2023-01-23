@@ -9,7 +9,13 @@ pub enum OutgoingWebsocketMessage {
     PlayerStatus(PlayerStatus),
     GameState(GameState),
     PlayerRole(SetRole),
+    PlayerDied(PlayerDied),
+    InvalidAction(String),
 }
+
+#[derive(Message, Debug, Serialize, Clone)]
+#[rtype(result = "()")]
+pub struct PlayerDied {}
 
 #[derive(Message, Debug, Serialize, Clone)]
 #[rtype(result = "()")]
