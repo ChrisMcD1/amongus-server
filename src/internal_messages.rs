@@ -19,6 +19,13 @@ pub struct RegisterPlayer {
 
 #[derive(Message)]
 #[rtype(result = "()")]
+pub struct ReportBodyValidated {
+    pub corpse: Uuid,
+    pub initiator: Uuid,
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
 pub struct StartGame {}
 
 #[derive(Message)]

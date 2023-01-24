@@ -1,15 +1,7 @@
 use actix::Actor;
 use actix_web::{web::Data, App, HttpServer};
-use game::Game;
-use routes::*;
-
-use player::*;
-mod game;
-mod incoming_websocket_messages;
-mod internal_messages;
-mod outgoing_websocket_messages;
-mod player;
-mod routes;
+use among_us_server::game::Game;
+use among_us_server::routes::*;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

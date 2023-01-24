@@ -1,4 +1,4 @@
-use crate::incoming_websocket_messages::KillPlayer;
+use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use crate::player::*;
@@ -25,7 +25,7 @@ impl Default for Game {
 }
 
 impl Game {
-    fn send_message_to_users(&self, msg: OutgoingWebsocketMessage) {
+    fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
         self.players
             .iter()
             .for_each(|player| player.1.do_send(msg.clone()))
@@ -51,7 +51,7 @@ impl Handler<PlayerDisconnected> for Game {
     type Result = ();
     fn handle(&mut self, msg: PlayerDisconnected, ctx: &mut Self::Context) -> Self::Result {
         self.players.remove(&msg.id);
-        self.send_message_to_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+        self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: msg.name,
             id: msg.id,
             status: PlayerConnectionStatus::Disconnected,
@@ -73,7 +73,7 @@ impl Handler<RegisterPlayer> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayer, ctx: &mut Self::Context) -> Self::Result {
         self.players.insert(msg.id, msg.player);
-        self.send_message_to_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+        self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: msg.name,
             id: msg.id,
             status: PlayerConnectionStatus::New,
@@ -86,6 +86,23 @@ impl Handler<KillPlayer> for Game {
     fn handle(&mut self, msg: KillPlayer, ctx: &mut Self::Context) -> Self::Result {
         let target = self.players.get(&msg.target).unwrap();
         target.do_send(msg);
+    }
+}
+
+impl Handler<ReportBody> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: ReportBody, ctx: &mut Self::Context) -> Self::Result {
+        self.players.get(&msg.corpse).unwrap().send(msg);
+    }
+}
+
+impl Handler<ReportBodyValidated> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: ReportBodyValidated, ctx: &mut Self::Context) -> Self::Result {
+        self.send_message_to_all_users(OutgoingWebsocketMessage::BodyReported(BodyReported {
+            corpse: msg.corpse,
+            initiator: msg.initiator,
+        }));
     }
 }
 
@@ -141,7 +158,7 @@ impl Handler<StartGame> for Game {
                 .do_send(SetRole { role: role.1 });
         });
 
-        self.send_message_to_users(OutgoingWebsocketMessage::GameState(GameState {
+        self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
             state: GameStateEnum::InGame,
         }));
     }

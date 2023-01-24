@@ -1,7 +1,7 @@
+use crate::game::Game;
 use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
-use crate::Game;
 use actix::dev::*;
 use actix_web_actors::ws;
 use std::fmt::Debug;
@@ -44,13 +44,13 @@ impl Player {
         });
     }
     fn handle_valid_incoming_message(
-        &self,
+        &mut self,
         msg: IncomingWebsocketMessage,
         ctx: &mut ws::WebsocketContext<Self>,
     ) {
         match msg {
             IncomingWebsocketMessage::KillPlayer(kill) => match self.role.unwrap() {
-                Role::Imposter(mut imposter) => {
+                Role::Imposter(ref mut imposter) => {
                     if !imposter.kill_is_off_cooldown() {
                         ctx.address()
                             .do_send(OutgoingWebsocketMessage::InvalidAction(format!(
@@ -59,7 +59,7 @@ impl Player {
                             )));
                         return;
                     }
-                    imposter.reset_kill_cooldown();
+                    self.role = Some(Role::Imposter(imposter.reset_kill_cooldown()));
                     self.game.do_send(kill);
                 }
                 _ => {
@@ -70,9 +70,12 @@ impl Player {
                         ));
                 }
             },
+            IncomingWebsocketMessage::ReportBody(report) => {
+                self.game.do_send(report);
+            }
         }
     }
-    fn handle_incoming_message(&self, msg: String, ctx: &mut ws::WebsocketContext<Self>) {
+    fn handle_incoming_message(&mut self, msg: String, ctx: &mut ws::WebsocketContext<Self>) {
         let msg = serde_json::from_str::<IncomingWebsocketMessage>(&msg);
         match msg {
             Ok(msg) => self.handle_valid_incoming_message(msg, ctx),
@@ -119,6 +122,26 @@ impl Handler<OutgoingWebsocketMessage> for Player {
         let msg_serialized = serde_json::to_string(&msg).unwrap();
         println!("Sending to {:?} msg: {:?}", self.name, msg_serialized);
         ctx.text(msg_serialized);
+    }
+}
+
+impl Handler<ReportBody> for Player {
+    type Result = ();
+    fn handle(&mut self, msg: ReportBody, ctx: &mut Self::Context) -> Self::Result {
+        if self.alive {
+            self.game.do_send(PlayerInvalidAction {
+                id: msg.initiator,
+                error: format!(
+                    "You cannot report {}'s body since they are alive",
+                    self.name
+                ),
+            });
+            return;
+        }
+        self.game.do_send(ReportBodyValidated {
+            corpse: msg.corpse,
+            initiator: msg.initiator,
+        });
     }
 }
 
