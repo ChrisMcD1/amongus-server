@@ -39,6 +39,7 @@ impl Meeting {
     }
     pub fn person_voted_out(&self) -> Option<Uuid> {
         let vote_threshold = f64::from(self.alive_player_count) / 2f64;
+        None
     }
 }
 
