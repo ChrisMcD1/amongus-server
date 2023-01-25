@@ -95,25 +95,26 @@ pub enum Role {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Imposter {
     last_kill_time: Instant,
+    kill_cooldown: Duration,
 }
 
-const KILL_COOLDOWN: Duration = Duration::from_secs(60);
-
 impl Imposter {
-    pub fn new() -> Self {
+    pub fn new(kill_cooldown: Duration) -> Self {
         Imposter {
             last_kill_time: Instant::now(),
+            kill_cooldown,
         }
     }
     pub fn kill_is_off_cooldown(&self) -> bool {
-        self.last_kill_time.elapsed() > KILL_COOLDOWN
+        self.last_kill_time.elapsed() > self.kill_cooldown
     }
     pub fn cooldown_remaining(&self) -> Duration {
-        KILL_COOLDOWN - self.last_kill_time.elapsed()
+        self.kill_cooldown - self.last_kill_time.elapsed()
     }
     pub fn reset_kill_cooldown(&self) -> Self {
         Imposter {
             last_kill_time: Instant::now(),
+            kill_cooldown: self.kill_cooldown,
         }
     }
 }
@@ -139,15 +140,17 @@ impl Actor for Player {
     }
 }
 
-impl Handler<SetRole> for Player {
+impl Handler<InternalSetPlayerRole> for Player {
     type Result = ();
-    fn handle(&mut self, msg: SetRole, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: InternalSetPlayerRole, ctx: &mut Self::Context) -> Self::Result {
         self.role = Some(match msg.role {
             RoleAssignment::Crewmate => Role::Crewmate,
-            RoleAssignment::Imposter => Role::Imposter(Imposter::new()),
+            RoleAssignment::Imposter => Role::Imposter(Imposter::new(msg.kill_cooldown)),
         });
         ctx.address()
-            .do_send(OutgoingWebsocketMessage::PlayerRole(msg));
+            .do_send(OutgoingWebsocketMessage::PlayerRole(SetRole {
+                role: msg.role,
+            }));
     }
 }
 

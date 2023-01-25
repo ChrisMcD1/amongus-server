@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use actix::Actor;
 use actix_web::{web::Data, App, HttpServer};
 use among_us_server::game::Game;
@@ -8,7 +10,7 @@ use rand::prelude::*;
 async fn main() -> std::io::Result<()> {
     println!("Hello, world!");
     let mut rng = rand::thread_rng();
-    let game = Game::new(rng.gen()).start();
+    let game = Game::new(Duration::from_secs(60), rng.gen()).start();
     HttpServer::new(move || {
         App::new()
             .service(hello_world)

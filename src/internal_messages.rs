@@ -1,6 +1,8 @@
-use crate::player::Player;
+use crate::outgoing_websocket_messages::RoleAssignment;
+use crate::player::{Player, Role};
 use actix::prelude::*;
 use std::sync::Arc;
+use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Message)]
@@ -47,3 +49,14 @@ pub struct PlayerInvalidAction {
 #[derive(Message)]
 #[rtype(result = "Arc<Uuid>")]
 pub struct GetUUID {}
+
+#[derive(Message)]
+#[rtype(result = "Arc<Duration>")]
+pub struct GetKillCooldown {}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct InternalSetPlayerRole {
+    pub role: RoleAssignment,
+    pub kill_cooldown: Duration,
+}

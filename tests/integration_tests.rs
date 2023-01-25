@@ -3,6 +3,7 @@ use actix_web::web::{self, Data};
 use actix_web::{body, http};
 use actix_web::{http::header::ContentType, test, App};
 use among_us_server::game::Game;
+use among_us_server::incoming_websocket_messages::*;
 use among_us_server::outgoing_websocket_messages::*;
 use among_us_server::routes::*;
 use awc::Client;
@@ -125,20 +126,99 @@ async fn one_player_each_role() {
     }
 }
 
+#[test]
+async fn imposter_kills_sucessfully() {
+    let server = test_fixtures::get_test_server();
+
+    let (_resp, mut crewmate_connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let (_resp, mut imposter_connection) = Client::new()
+        .ws(server.url("/join-game?username=Kate"))
+        .connect()
+        .await
+        .unwrap();
+
+    let _ = server.post("/start-game").send().await;
+
+    let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
+    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
+    let _crewmate_game_start = crewmate_connection.next().await;
+    let _crewmate_role_assign = crewmate_connection.next().await;
+    let _imposter_join = imposter_connection.next().await;
+    let _imposter_game_start = imposter_connection.next().await;
+    let _imposter_role_assign = imposter_connection.next().await;
+
+    let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
+    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
+
+    let crewmate_id = match crewmate_join {
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        _ => unreachable!(),
+    };
+
+    let imposter_id = match imposter_join {
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        _ => unreachable!(),
+    };
+
+    imposter_connection
+        .send(awc::ws::Message::Text(
+            serde_json::to_string(&IncomingWebsocketMessage::KillPlayer(KillPlayer {
+                target: crewmate_id,
+                initiator: imposter_id,
+            }))
+            .unwrap()
+            .into(),
+        ))
+        .await
+        .unwrap();
+
+    let imposter_success_frame = imposter_connection.next().await.unwrap().unwrap();
+    let crewmate_death_frame = crewmate_connection.next().await.unwrap().unwrap();
+
+    let imposter_success = test_fixtures::get_websocket_frame_data(imposter_success_frame).unwrap();
+    let crewmate_death = test_fixtures::get_websocket_frame_data(crewmate_death_frame).unwrap();
+
+    match imposter_success {
+        OutgoingWebsocketMessage::SuccessfulKill() => {
+            assert!(true, "We did it bois");
+        }
+        _ => assert!(
+            false,
+            "{}",
+            format!("Parsed to wrong thing: {:?}", imposter_success)
+        ),
+    }
+
+    match crewmate_death {
+        OutgoingWebsocketMessage::PlayerDied(_player_died) => {
+            assert!(true, "We did it bois");
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+}
+
 mod test_fixtures {
     use actix_http::ws::Frame;
     use actix_http::Request;
     use actix_test;
     use actix_web::body::BoxBody;
-    use actix_web::dev::{Service, ServiceResponse};
+    use actix_web::dev::{ConnectionInfo, Service, ServiceResponse};
     use actix_web::error::Error;
     use among_us_server::outgoing_websocket_messages::OutgoingWebsocketMessage;
+    use futures::StreamExt;
+    use std::time::Duration;
+    use uuid::Uuid;
 
     use super::*;
 
     pub async fn get_test_service(
     ) -> impl Service<Request, Response = ServiceResponse<BoxBody>, Error = Error> {
-        let game = Game::new(0).start();
+        let game = Game::new(Duration::from_secs(0), 0).start();
         test::init_service(
             App::new()
                 .service(hello_world)
@@ -150,7 +230,7 @@ mod test_fixtures {
     }
 
     pub fn get_test_server() -> actix_test::TestServer {
-        let game = Game::new(0).start();
+        let game = Game::new(Duration::from_secs(0), 0).start();
         actix_test::start(move || {
             App::new()
                 .service(hello_world)

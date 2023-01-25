@@ -10,12 +10,14 @@ use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::sync::Arc;
+use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Game {
     state: GameStateEnum,
     players: BTreeMap<Uuid, Addr<Player>>,
+    kill_cooldown: Duration,
     pub rng: Pcg32,
 }
 
@@ -25,10 +27,11 @@ impl Game {
             .iter()
             .for_each(|player| player.1.do_send(msg.clone()))
     }
-    pub fn new(seed: u64) -> Self {
+    pub fn new(kill_cooldown: Duration, seed: u64) -> Self {
         Game {
             state: GameStateEnum::Lobby,
             players: BTreeMap::new(),
+            kill_cooldown,
             rng: Pcg32::seed_from_u64(seed),
         }
     }
@@ -125,6 +128,13 @@ impl Handler<GetUUID> for Game {
     }
 }
 
+impl Handler<GetKillCooldown> for Game {
+    type Result = Arc<Duration>;
+    fn handle(&mut self, msg: GetKillCooldown, ctx: &mut Self::Context) -> Self::Result {
+        Arc::new(self.kill_cooldown)
+    }
+}
+
 impl Handler<ForwardedOutgoingWebsocketMessage> for Game {
     type Result = ();
     fn handle(
@@ -163,7 +173,10 @@ impl Handler<StartGame> for Game {
             self.players
                 .get(&role.0)
                 .unwrap()
-                .do_send(SetRole { role: role.1 });
+                .do_send(InternalSetPlayerRole {
+                    role: role.1,
+                    kill_cooldown: self.kill_cooldown,
+                });
         });
 
         self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
