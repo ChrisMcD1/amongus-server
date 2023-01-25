@@ -22,14 +22,14 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(name: &str, game: Addr<Game>) -> Self {
+    pub fn new(name: &str, game: Addr<Game>, id: Uuid) -> Self {
         Player {
             role: None,
             name: name.to_string(),
             alive: true,
             game,
             heartbeat: Instant::now(),
-            id: Uuid::new_v4(),
+            id,
         }
     }
     fn heartbeat(&self, ctx: &mut ws::WebsocketContext<Self>) {
@@ -86,6 +86,38 @@ impl Player {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Role {
+    Imposter(Imposter),
+    Crewmate,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Imposter {
+    last_kill_time: Instant,
+}
+
+const KILL_COOLDOWN: Duration = Duration::from_secs(60);
+
+impl Imposter {
+    pub fn new() -> Self {
+        Imposter {
+            last_kill_time: Instant::now(),
+        }
+    }
+    pub fn kill_is_off_cooldown(&self) -> bool {
+        self.last_kill_time.elapsed() > KILL_COOLDOWN
+    }
+    pub fn cooldown_remaining(&self) -> Duration {
+        KILL_COOLDOWN - self.last_kill_time.elapsed()
+    }
+    pub fn reset_kill_cooldown(&self) -> Self {
+        Imposter {
+            last_kill_time: Instant::now(),
+        }
+    }
+}
+
 impl Actor for Player {
     type Context = ws::WebsocketContext<Self>;
 
@@ -110,7 +142,10 @@ impl Actor for Player {
 impl Handler<SetRole> for Player {
     type Result = ();
     fn handle(&mut self, msg: SetRole, ctx: &mut Self::Context) -> Self::Result {
-        self.role = Some(msg.role.clone());
+        self.role = Some(match msg.role {
+            RoleAssignment::Crewmate => Role::Crewmate,
+            RoleAssignment::Imposter => Role::Imposter(Imposter::new()),
+        });
         ctx.address()
             .do_send(OutgoingWebsocketMessage::PlayerRole(msg));
     }

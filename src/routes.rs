@@ -32,7 +32,8 @@ pub async fn join_game(
     if game_has_started {
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
     }
-    let player = Player::new(&params.username, game.get_ref().clone());
+    let player_id = game.send(GetUUID {}).await.unwrap();
+    let player = Player::new(&params.username, game.get_ref().clone(), *player_id);
     let resp = ws::start(player, &req, stream).unwrap();
 
     game.do_send(PrintGameState {});

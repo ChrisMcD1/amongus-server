@@ -2,19 +2,21 @@ use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use crate::player::*;
+use actix::dev::MessageResponse;
 use actix::prelude::*;
 use rand::prelude::*;
-use rand_chacha::ChaCha8Rng;
-use std::collections::HashMap;
+use rand_pcg::Pcg32;
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Game {
     state: GameStateEnum,
-    players: HashMap<Uuid, Addr<Player>>,
-    rng: ChaCha8Rng,
+    players: BTreeMap<Uuid, Addr<Player>>,
+    pub rng: Pcg32,
 }
 
 impl Game {
@@ -26,8 +28,8 @@ impl Game {
     pub fn new(seed: u64) -> Self {
         Game {
             state: GameStateEnum::Lobby,
-            players: HashMap::new(),
-            rng: ChaCha8Rng::seed_from_u64(seed),
+            players: BTreeMap::new(),
+            rng: Pcg32::seed_from_u64(seed),
         }
     }
 }
@@ -116,6 +118,13 @@ impl Handler<PlayerInvalidAction> for Game {
     }
 }
 
+impl Handler<GetUUID> for Game {
+    type Result = Arc<Uuid>;
+    fn handle(&mut self, msg: GetUUID, ctx: &mut Self::Context) -> Self::Result {
+        Arc::new(Uuid::from_bytes(self.rng.gen())).clone()
+    }
+}
+
 impl Handler<ForwardedOutgoingWebsocketMessage> for Game {
     type Result = ();
     fn handle(
@@ -134,11 +143,11 @@ impl Handler<StartGame> for Game {
         let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);
         let mut imposters: HashSet<Uuid> = HashSet::new();
-        let mut player_roles: HashMap<Uuid, Role> = self
+        let mut player_roles: BTreeMap<Uuid, RoleAssignment> = self
             .players
             .clone()
             .iter()
-            .map(|player| (player.0.clone(), Role::Crewmate))
+            .map(|player| (player.0.clone(), RoleAssignment::Crewmate))
             .collect();
         while imposter_count > 0 {
             let imposter_index = self.rng.gen_range(0..player_count);
@@ -147,7 +156,7 @@ impl Handler<StartGame> for Game {
                 continue;
             }
             imposters.insert(player.0.clone());
-            player_roles.insert(player.0.clone(), Role::Imposter(Imposter::new()));
+            player_roles.insert(player.0.clone(), RoleAssignment::Imposter);
             imposter_count = imposter_count - 1;
         }
         player_roles.into_iter().for_each(|role| {

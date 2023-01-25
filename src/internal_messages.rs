@@ -1,5 +1,6 @@
 use crate::player::Player;
 use actix::prelude::*;
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Message)]
@@ -42,3 +43,7 @@ pub struct PlayerInvalidAction {
     pub id: Uuid,
     pub error: String,
 }
+
+#[derive(Message)]
+#[rtype(result = "Arc<Uuid>")]
+pub struct GetUUID {}

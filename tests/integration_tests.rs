@@ -42,6 +42,89 @@ async fn player_joins_game() {
     }
 }
 
+#[test]
+async fn one_player_assigned_imposter() {
+    let server = test_fixtures::get_test_server();
+
+    let (_resp, mut connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let _ = server.post("/start-game").send().await;
+
+    let _player_join = connection.next().await;
+
+    let game_started_frame = connection.next().await.unwrap().unwrap();
+    let role_assigned_frame = connection.next().await.unwrap().unwrap();
+
+    let game_started = test_fixtures::get_websocket_frame_data(game_started_frame).unwrap();
+    let role_assigned = test_fixtures::get_websocket_frame_data(role_assigned_frame).unwrap();
+
+    match game_started {
+        OutgoingWebsocketMessage::GameState(game_state) => {
+            assert_eq!(game_state.state, GameStateEnum::InGame);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+
+    match role_assigned {
+        OutgoingWebsocketMessage::PlayerRole(player_role) => {
+            assert_eq!(player_role.role, RoleAssignment::Imposter);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+}
+
+#[test]
+async fn one_player_each_role() {
+    let server = test_fixtures::get_test_server();
+
+    let (_resp, mut chris_connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let (_resp, mut kate_connection) = Client::new()
+        .ws(server.url("/join-game?username=Kate"))
+        .connect()
+        .await
+        .unwrap();
+
+    let _ = server.post("/start-game").send().await;
+
+    let _chris_join = chris_connection.next().await;
+    let _kate_join = chris_connection.next().await;
+    let _chris_game_start = chris_connection.next().await;
+
+    let _kate_join = kate_connection.next().await;
+    let _kate_game_start = kate_connection.next().await;
+
+    let chris_role_assigned_frame = chris_connection.next().await.unwrap().unwrap();
+    let kate_role_assigned_frame = kate_connection.next().await.unwrap().unwrap();
+
+    let chris_role_assigned =
+        test_fixtures::get_websocket_frame_data(chris_role_assigned_frame).unwrap();
+    let kate_role_assigned =
+        test_fixtures::get_websocket_frame_data(kate_role_assigned_frame).unwrap();
+
+    match chris_role_assigned {
+        OutgoingWebsocketMessage::PlayerRole(player_role) => {
+            assert_eq!(player_role.role, RoleAssignment::Crewmate);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+
+    match kate_role_assigned {
+        OutgoingWebsocketMessage::PlayerRole(player_role) => {
+            assert_eq!(player_role.role, RoleAssignment::Imposter);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+}
+
 mod test_fixtures {
     use actix_http::ws::Frame;
     use actix_http::Request;
