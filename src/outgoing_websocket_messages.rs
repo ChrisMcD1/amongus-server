@@ -33,7 +33,9 @@ pub struct ForwardedOutgoingWebsocketMessage {
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
 #[rtype(result = "()")]
-pub struct PlayerDied {}
+pub struct PlayerDied {
+    pub killer: Uuid,
+}
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
 #[rtype(result = "()")]

@@ -201,7 +201,9 @@ impl Handler<KillPlayer> for Player {
                 });
                 self.alive = false;
                 ctx.address()
-                    .do_send(OutgoingWebsocketMessage::PlayerDied(PlayerDied {}));
+                    .do_send(OutgoingWebsocketMessage::PlayerDied(PlayerDied {
+                        killer: msg.initiator,
+                    }));
             }
             Role::Imposter(_) => self.game.do_send(PlayerInvalidAction {
                 id: msg.initiator,

@@ -195,8 +195,8 @@ async fn imposter_kills_sucessfully() {
     }
 
     match crewmate_death {
-        OutgoingWebsocketMessage::PlayerDied(_player_died) => {
-            assert!(true, "We did it bois");
+        OutgoingWebsocketMessage::PlayerDied(player_died) => {
+            assert_eq!(player_died.killer, imposter_id);
         }
         _ => assert!(false, "Parsed to wrong thing"),
     }
@@ -207,12 +207,10 @@ mod test_fixtures {
     use actix_http::Request;
     use actix_test;
     use actix_web::body::BoxBody;
-    use actix_web::dev::{ConnectionInfo, Service, ServiceResponse};
+    use actix_web::dev::{Service, ServiceResponse};
     use actix_web::error::Error;
     use among_us_server::outgoing_websocket_messages::OutgoingWebsocketMessage;
-    use futures::StreamExt;
     use std::time::Duration;
-    use uuid::Uuid;
 
     use super::*;
 
