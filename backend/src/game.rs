@@ -14,9 +14,32 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct Game {
     state: GameStateEnum,
+    alive_player_count: u32,
     players: BTreeMap<Uuid, Addr<Player>>,
     kill_cooldown: Duration,
     pub rng: Pcg32,
+    meeting: Option<Meeting>,
+}
+
+#[derive(Debug)]
+struct Meeting {
+    alive_player_count: u32,
+    votes: BTreeMap<Uuid, Uuid>,
+}
+
+impl Meeting {
+    pub fn new(alive_player_count: u32) -> Self {
+        Meeting {
+            alive_player_count,
+            votes: BTreeMap::new(),
+        }
+    }
+    pub fn add_vote(&mut self, vote_by: Uuid, vote_for: Uuid) {
+        self.votes.insert(vote_by, vote_for);
+    }
+    pub fn person_voted_out(&self) -> Option<Uuid> {
+        let vote_threshold = f64::from(self.alive_player_count) / 2f64;
+    }
 }
 
 impl Game {
@@ -31,7 +54,15 @@ impl Game {
             players: BTreeMap::new(),
             kill_cooldown,
             rng: Pcg32::seed_from_u64(seed),
+            meeting: None,
+            alive_player_count: 0,
         }
+    }
+    pub fn start_meeting(&mut self) {
+        self.meeting = Some(Meeting::new(self.alive_player_count));
+    }
+    pub fn end_meeting(&mut self) {
+        self.meeting = None;
     }
 }
 
@@ -76,12 +107,18 @@ impl Handler<RegisterPlayer> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayer, _ctx: &mut Self::Context) -> Self::Result {
         self.players.insert(msg.id, msg.player);
+        self.alive_player_count = self.alive_player_count + 1;
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: msg.name,
             id: msg.id,
             status: PlayerConnectionStatus::New,
         }));
     }
+}
+
+impl Handler<InternalVote> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: InternalVote, ctx: &mut Self::Context) -> Self::Result {}
 }
 
 impl Handler<InternalKillPlayer> for Game {
@@ -95,6 +132,7 @@ impl Handler<InternalKillPlayer> for Game {
 impl Handler<InternalReportBody> for Game {
     type Result = ();
     fn handle(&mut self, msg: InternalReportBody, _ctx: &mut Self::Context) -> Self::Result {
+        self.alive_player_count = self.alive_player_count - 1;
         self.players.get(&msg.corpse).unwrap().do_send(msg);
     }
 }

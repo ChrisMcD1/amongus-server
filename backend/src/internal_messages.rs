@@ -74,3 +74,10 @@ pub struct InternalReportBody {
     pub corpse: Uuid,
     pub initiator: Uuid,
 }
+
+#[derive(Message, Debug)]
+#[rtype(result = "()")]
+pub struct InternalVote {
+    pub target: Uuid,
+    pub initiator: Uuid,
+}

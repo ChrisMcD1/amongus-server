@@ -79,6 +79,12 @@ impl Player {
                     initiator: self.id,
                 });
             }
+            IncomingWebsocketMessage::Vote(vote) => {
+                self.game.do_send(InternalVote {
+                    target: vote.target,
+                    initiator: self.id,
+                });
+            }
         }
     }
     fn handle_incoming_message(&mut self, msg: String, ctx: &mut ws::WebsocketContext<Self>) {

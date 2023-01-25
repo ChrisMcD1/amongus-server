@@ -7,6 +7,7 @@ use uuid::Uuid;
 pub enum IncomingWebsocketMessage {
     KillPlayer(KillPlayer),
     ReportBody(ReportBody),
+    Vote(Vote),
 }
 
 #[derive(Message, Debug, Deserialize, Serialize)]
@@ -18,5 +19,11 @@ pub struct ReportBody {
 #[derive(Message, Debug, Deserialize, Serialize)]
 #[rtype(result = "()")]
 pub struct KillPlayer {
+    pub target: Uuid,
+}
+
+#[derive(Message, Debug, Deserialize, Serialize)]
+#[rtype(result = "()")]
+pub struct Vote {
     pub target: Uuid,
 }
