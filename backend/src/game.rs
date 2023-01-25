@@ -22,7 +22,7 @@ pub struct Game {
 }
 
 #[derive(Debug)]
-struct Meeting {
+pub struct Meeting {
     alive_player_count: u32,
     votes: BTreeMap<Uuid, Uuid>,
 }
@@ -38,8 +38,30 @@ impl Meeting {
         self.votes.insert(vote_by, vote_for);
     }
     pub fn person_voted_out(&self) -> Option<Uuid> {
-        let vote_threshold = f64::from(self.alive_player_count) / 2f64;
-        None
+        let vote_threshold = (f64::from(self.alive_player_count) / 2f64).ceil() as u32;
+        let mut votes_for_each: BTreeMap<Uuid, u32> = BTreeMap::new();
+        for vote in self.votes.iter() {
+            let vote_for = vote.1;
+            match votes_for_each.get(vote_for) {
+                Some(votes) => votes_for_each.insert(*vote_for, votes + 1),
+                None => votes_for_each.insert(*vote_for, 1),
+            };
+        }
+        let highest_person_votes = votes_for_each
+            .iter()
+            .reduce(|accum, item| {
+                if item.1 > accum.1 {
+                    return item;
+                } else {
+                    accum
+                }
+            })
+            .unwrap();
+        if *highest_person_votes.1 >= vote_threshold {
+            Some(*highest_person_votes.0)
+        } else {
+            None
+        }
     }
 }
 
@@ -119,7 +141,14 @@ impl Handler<RegisterPlayer> for Game {
 
 impl Handler<InternalVote> for Game {
     type Result = ();
-    fn handle(&mut self, msg: InternalVote, ctx: &mut Self::Context) -> Self::Result {}
+    fn handle(&mut self, msg: InternalVote, ctx: &mut Self::Context) -> Self::Result {
+        match self.meeting.as_mut() {
+            Some(meeting) => {
+                meeting.add_vote(msg.initiator, msg.target);
+            }
+            None => println!("Cannot vote without a meeting active!"),
+        }
+    }
 }
 
 impl Handler<InternalKillPlayer> for Game {
