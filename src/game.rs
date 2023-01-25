@@ -1,4 +1,3 @@
-use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use crate::player::*;
@@ -85,17 +84,17 @@ impl Handler<RegisterPlayer> for Game {
     }
 }
 
-impl Handler<KillPlayer> for Game {
+impl Handler<InternalKillPlayer> for Game {
     type Result = ();
-    fn handle(&mut self, msg: KillPlayer, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: InternalKillPlayer, _ctx: &mut Self::Context) -> Self::Result {
         let target = self.players.get(&msg.target).unwrap();
         target.do_send(msg);
     }
 }
 
-impl Handler<ReportBody> for Game {
+impl Handler<InternalReportBody> for Game {
     type Result = ();
-    fn handle(&mut self, msg: ReportBody, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: InternalReportBody, _ctx: &mut Self::Context) -> Self::Result {
         self.players.get(&msg.corpse).unwrap().do_send(msg);
     }
 }

@@ -60,7 +60,10 @@ impl Player {
                         return;
                     }
                     self.role = Some(Role::Imposter(imposter.reset_kill_cooldown()));
-                    self.game.do_send(kill);
+                    self.game.do_send(InternalKillPlayer {
+                        target: kill.target,
+                        initiator: self.id,
+                    });
                 }
                 _ => {
                     ctx.address()
@@ -71,7 +74,10 @@ impl Player {
                 }
             },
             IncomingWebsocketMessage::ReportBody(report) => {
-                self.game.do_send(report);
+                self.game.do_send(InternalReportBody {
+                    corpse: report.corpse,
+                    initiator: self.id,
+                });
             }
         }
     }
@@ -163,9 +169,9 @@ impl Handler<OutgoingWebsocketMessage> for Player {
     }
 }
 
-impl Handler<ReportBody> for Player {
+impl Handler<InternalReportBody> for Player {
     type Result = ();
-    fn handle(&mut self, msg: ReportBody, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: InternalReportBody, _ctx: &mut Self::Context) -> Self::Result {
         if self.alive {
             self.game.do_send(PlayerInvalidAction {
                 id: msg.initiator,
@@ -183,9 +189,9 @@ impl Handler<ReportBody> for Player {
     }
 }
 
-impl Handler<KillPlayer> for Player {
+impl Handler<InternalKillPlayer> for Player {
     type Result = ();
-    fn handle(&mut self, msg: KillPlayer, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: InternalKillPlayer, ctx: &mut Self::Context) -> Self::Result {
         match self.role.unwrap() {
             Role::Crewmate => {
                 if !self.alive {

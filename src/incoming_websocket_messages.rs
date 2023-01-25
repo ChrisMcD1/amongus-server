@@ -13,12 +13,10 @@ pub enum IncomingWebsocketMessage {
 #[rtype(result = "()")]
 pub struct ReportBody {
     pub corpse: Uuid,
-    pub initiator: Uuid,
 }
 
 #[derive(Message, Debug, Deserialize, Serialize)]
 #[rtype(result = "()")]
 pub struct KillPlayer {
     pub target: Uuid,
-    pub initiator: Uuid,
 }

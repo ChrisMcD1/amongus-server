@@ -168,7 +168,6 @@ async fn imposter_kills_sucessfully() {
         .send(awc::ws::Message::Text(
             serde_json::to_string(&IncomingWebsocketMessage::KillPlayer(KillPlayer {
                 target: crewmate_id,
-                initiator: imposter_id,
             }))
             .unwrap()
             .into(),

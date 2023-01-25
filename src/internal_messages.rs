@@ -60,3 +60,17 @@ pub struct InternalSetPlayerRole {
     pub role: RoleAssignment,
     pub kill_cooldown: Duration,
 }
+
+#[derive(Message, Debug)]
+#[rtype(result = "()")]
+pub struct InternalKillPlayer {
+    pub target: Uuid,
+    pub initiator: Uuid,
+}
+
+#[derive(Message, Debug)]
+#[rtype(result = "()")]
+pub struct InternalReportBody {
+    pub corpse: Uuid,
+    pub initiator: Uuid,
+}
