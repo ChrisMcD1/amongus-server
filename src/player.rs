@@ -130,7 +130,7 @@ impl Actor for Player {
             player: ctx.address(),
         });
     }
-    fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
+    fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
         println!("Stopping websocket");
         self.game.do_send(PlayerDisconnected {
             id: self.id,
@@ -165,7 +165,7 @@ impl Handler<OutgoingWebsocketMessage> for Player {
 
 impl Handler<ReportBody> for Player {
     type Result = ();
-    fn handle(&mut self, msg: ReportBody, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ReportBody, _ctx: &mut Self::Context) -> Self::Result {
         if self.alive {
             self.game.do_send(PlayerInvalidAction {
                 id: msg.initiator,

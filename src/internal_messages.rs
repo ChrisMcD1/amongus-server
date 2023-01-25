@@ -1,5 +1,5 @@
 use crate::outgoing_websocket_messages::RoleAssignment;
-use crate::player::{Player, Role};
+use crate::player::Player;
 use actix::prelude::*;
 use std::sync::Arc;
 use std::time::Duration;

@@ -2,7 +2,6 @@ use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use crate::player::*;
-use actix::dev::MessageResponse;
 use actix::prelude::*;
 use rand::prelude::*;
 use rand_pcg::Pcg32;
@@ -47,14 +46,14 @@ pub struct PrintGameState {}
 
 impl Handler<PrintGameState> for Game {
     type Result = ();
-    fn handle(&mut self, msg: PrintGameState, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: PrintGameState, _ctx: &mut Self::Context) -> Self::Result {
         println!("{:#?}", self);
     }
 }
 
 impl Handler<PlayerDisconnected> for Game {
     type Result = ();
-    fn handle(&mut self, msg: PlayerDisconnected, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: PlayerDisconnected, _ctx: &mut Self::Context) -> Self::Result {
         self.players.remove(&msg.id);
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: msg.name,
@@ -66,7 +65,7 @@ impl Handler<PlayerDisconnected> for Game {
 
 impl Handler<HasGameStarted> for Game {
     type Result = bool;
-    fn handle(&mut self, msg: HasGameStarted, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: HasGameStarted, _ctx: &mut Self::Context) -> Self::Result {
         match self.state {
             GameStateEnum::Lobby => false,
             GameStateEnum::InGame => true,
@@ -76,7 +75,7 @@ impl Handler<HasGameStarted> for Game {
 
 impl Handler<RegisterPlayer> for Game {
     type Result = ();
-    fn handle(&mut self, msg: RegisterPlayer, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: RegisterPlayer, _ctx: &mut Self::Context) -> Self::Result {
         self.players.insert(msg.id, msg.player);
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: msg.name,
@@ -88,7 +87,7 @@ impl Handler<RegisterPlayer> for Game {
 
 impl Handler<KillPlayer> for Game {
     type Result = ();
-    fn handle(&mut self, msg: KillPlayer, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: KillPlayer, _ctx: &mut Self::Context) -> Self::Result {
         let target = self.players.get(&msg.target).unwrap();
         target.do_send(msg);
     }
@@ -96,14 +95,14 @@ impl Handler<KillPlayer> for Game {
 
 impl Handler<ReportBody> for Game {
     type Result = ();
-    fn handle(&mut self, msg: ReportBody, ctx: &mut Self::Context) -> Self::Result {
-        self.players.get(&msg.corpse).unwrap().send(msg);
+    fn handle(&mut self, msg: ReportBody, _ctx: &mut Self::Context) -> Self::Result {
+        self.players.get(&msg.corpse).unwrap().do_send(msg);
     }
 }
 
 impl Handler<ReportBodyValidated> for Game {
     type Result = ();
-    fn handle(&mut self, msg: ReportBodyValidated, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ReportBodyValidated, _ctx: &mut Self::Context) -> Self::Result {
         self.send_message_to_all_users(OutgoingWebsocketMessage::BodyReported(BodyReported {
             corpse: msg.corpse,
             initiator: msg.initiator,
@@ -113,7 +112,7 @@ impl Handler<ReportBodyValidated> for Game {
 
 impl Handler<PlayerInvalidAction> for Game {
     type Result = ();
-    fn handle(&mut self, msg: PlayerInvalidAction, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: PlayerInvalidAction, _ctx: &mut Self::Context) -> Self::Result {
         self.players
             .get(&msg.id)
             .unwrap()
@@ -123,14 +122,14 @@ impl Handler<PlayerInvalidAction> for Game {
 
 impl Handler<GetUUID> for Game {
     type Result = Arc<Uuid>;
-    fn handle(&mut self, msg: GetUUID, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: GetUUID, _ctx: &mut Self::Context) -> Self::Result {
         Arc::new(Uuid::from_bytes(self.rng.gen())).clone()
     }
 }
 
 impl Handler<GetKillCooldown> for Game {
     type Result = Arc<Duration>;
-    fn handle(&mut self, msg: GetKillCooldown, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: GetKillCooldown, _ctx: &mut Self::Context) -> Self::Result {
         Arc::new(self.kill_cooldown)
     }
 }
@@ -140,7 +139,7 @@ impl Handler<ForwardedOutgoingWebsocketMessage> for Game {
     fn handle(
         &mut self,
         msg: ForwardedOutgoingWebsocketMessage,
-        ctx: &mut Self::Context,
+        _ctx: &mut Self::Context,
     ) -> Self::Result {
         self.players.get(&msg.destination).unwrap().do_send(msg.msg);
     }
@@ -148,7 +147,7 @@ impl Handler<ForwardedOutgoingWebsocketMessage> for Game {
 
 impl Handler<StartGame> for Game {
     type Result = ();
-    fn handle(&mut self, msg: StartGame, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: StartGame, _ctx: &mut Self::Context) -> Self::Result {
         self.state = GameStateEnum::InGame;
         let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);
