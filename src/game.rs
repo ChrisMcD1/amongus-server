@@ -4,6 +4,7 @@ use crate::outgoing_websocket_messages::*;
 use crate::player::*;
 use actix::prelude::*;
 use rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -13,15 +14,7 @@ use uuid::Uuid;
 pub struct Game {
     state: GameStateEnum,
     players: HashMap<Uuid, Addr<Player>>,
-}
-
-impl Default for Game {
-    fn default() -> Self {
-        Game {
-            state: GameStateEnum::Lobby,
-            players: HashMap::new(),
-        }
-    }
+    rng: ChaCha8Rng,
 }
 
 impl Game {
@@ -29,6 +22,13 @@ impl Game {
         self.players
             .iter()
             .for_each(|player| player.1.do_send(msg.clone()))
+    }
+    pub fn new(seed: u64) -> Self {
+        Game {
+            state: GameStateEnum::Lobby,
+            players: HashMap::new(),
+            rng: ChaCha8Rng::seed_from_u64(seed),
+        }
     }
 }
 
@@ -140,9 +140,8 @@ impl Handler<StartGame> for Game {
             .iter()
             .map(|player| (player.0.clone(), Role::Crewmate))
             .collect();
-        let mut rng = rand::thread_rng();
         while imposter_count > 0 {
-            let imposter_index = rng.gen_range(0..player_count);
+            let imposter_index = self.rng.gen_range(0..player_count);
             let player = self.players.iter().nth(imposter_index).unwrap();
             if imposters.contains(player.0) {
                 continue;

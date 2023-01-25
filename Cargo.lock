@@ -356,6 +356,7 @@ dependencies = [
  "futures",
  "futures-util",
  "rand",
+ "rand_chacha",
  "serde",
  "serde_json",
  "uuid",

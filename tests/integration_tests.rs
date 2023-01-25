@@ -55,7 +55,7 @@ mod test_fixtures {
 
     pub async fn get_test_service(
     ) -> impl Service<Request, Response = ServiceResponse<BoxBody>, Error = Error> {
-        let game = Game::default().start();
+        let game = Game::new(0).start();
         test::init_service(
             App::new()
                 .service(hello_world)
@@ -67,7 +67,7 @@ mod test_fixtures {
     }
 
     pub fn get_test_server() -> actix_test::TestServer {
-        let game = Game::default().start();
+        let game = Game::new(0).start();
         actix_test::start(move || {
             App::new()
                 .service(hello_world)

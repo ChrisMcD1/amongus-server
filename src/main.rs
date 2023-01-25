@@ -2,11 +2,13 @@ use actix::Actor;
 use actix_web::{web::Data, App, HttpServer};
 use among_us_server::game::Game;
 use among_us_server::routes::*;
+use rand::prelude::*;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("Hello, world!");
-    let game = Game::default().start();
+    let mut rng = rand::thread_rng();
+    let game = Game::new(rng.gen()).start();
     HttpServer::new(move || {
         App::new()
             .service(hello_world)
