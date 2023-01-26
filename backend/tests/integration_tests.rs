@@ -56,8 +56,8 @@ async fn one_player_assigned_imposter() {
 
     let _player_join = connection.next().await;
 
-    let game_started_frame = connection.next().await.unwrap().unwrap();
     let role_assigned_frame = connection.next().await.unwrap().unwrap();
+    let game_started_frame = connection.next().await.unwrap().unwrap();
 
     let game_started = test_fixtures::get_websocket_frame_data(game_started_frame).unwrap();
     let role_assigned = test_fixtures::get_websocket_frame_data(role_assigned_frame).unwrap();
@@ -97,10 +97,8 @@ async fn one_player_each_role() {
 
     let _chris_join = chris_connection.next().await;
     let _kate_join = chris_connection.next().await;
-    let _chris_game_start = chris_connection.next().await;
 
     let _kate_join = kate_connection.next().await;
-    let _kate_game_start = kate_connection.next().await;
 
     let chris_role_assigned_frame = chris_connection.next().await.unwrap().unwrap();
     let kate_role_assigned_frame = kate_connection.next().await.unwrap().unwrap();
@@ -145,11 +143,11 @@ async fn imposter_kills_sucessfully() {
 
     let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
     let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-    let _crewmate_game_start = crewmate_connection.next().await;
     let _crewmate_role_assign = crewmate_connection.next().await;
+    let _crewmate_game_start = crewmate_connection.next().await;
     let _imposter_join = imposter_connection.next().await;
-    let _imposter_game_start = imposter_connection.next().await;
     let _imposter_role_assign = imposter_connection.next().await;
+    let _imposter_game_start = imposter_connection.next().await;
 
     let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
     let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();

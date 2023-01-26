@@ -1,6 +1,8 @@
 use crate::game::*;
 use crate::internal_messages::*;
 use crate::player::Player;
+use crate::player::PlayerWebsocket;
+use crate::player::PlayerWithWebsocket;
 use actix::prelude::*;
 use actix_web::post;
 use actix_web::{
@@ -33,12 +35,18 @@ pub async fn join_game(
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
     }
     let player_id = game.send(GetUUID {}).await.unwrap();
-    let player = Player::new(&params.username, game.get_ref().clone(), *player_id);
-    let resp = ws::start(player, &req, stream).unwrap();
+
+    game.do_send(RegisterPlayerWithWebsocket {
+        name: params.username.clone(),
+        id: *player_id,
+    });
+
+    let player_websocket = PlayerWebsocket::new(*player_id, game.get_ref().clone());
+    let player_websocket_active = ws::start(player_websocket, &req, stream).unwrap();
 
     game.do_send(PrintGameState {});
 
-    resp
+    player_websocket_active
 }
 
 #[post("/start-game")]

@@ -12,6 +12,156 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Debug)]
+pub struct PlayerWithWebsocket {
+    pub role: Option<Role>,
+    pub name: String,
+    pub alive: bool,
+    pub id: Uuid,
+    pub websocket: Option<Addr<PlayerWebsocket>>,
+}
+
+impl PlayerWithWebsocket {
+    pub fn new(name: &str, id: Uuid) -> Self {
+        PlayerWithWebsocket {
+            role: None,
+            name: name.to_string(),
+            alive: true,
+            id,
+            websocket: None,
+        }
+    }
+    pub fn close_websocket(&self) {
+        match &self.websocket {
+            Some(websocket) => websocket.do_send(CloseWebsocket {}),
+            None => {
+                println!(
+                    "Trying to close websocket for {:?} that was never opened",
+                    self.id
+                )
+            }
+        }
+    }
+    pub fn set_websocket_address(&mut self, websocket: Addr<PlayerWebsocket>) {
+        self.websocket = Some(websocket);
+    }
+    pub fn send_outgoing_message(&self, msg: OutgoingWebsocketMessage) {
+        match &self.websocket {
+            Some(websocket) => websocket.do_send(msg),
+            None => {
+                println!(
+                    "Trying to send message to websocket for {:?} that is closed",
+                    self.id
+                )
+            }
+        }
+    }
+    pub fn set_role(&mut self, role: RoleAssignment, kill_cooldown: Duration) {
+        self.role = Some(match role {
+            RoleAssignment::Crewmate => Role::Crewmate,
+            RoleAssignment::Imposter => Role::Imposter(Imposter::new(kill_cooldown)),
+        });
+        self.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole { role }));
+    }
+}
+
+impl Handler<CloseWebsocket> for PlayerWebsocket {
+    type Result = ();
+    fn handle(&mut self, msg: CloseWebsocket, ctx: &mut Self::Context) -> Self::Result {
+        ctx.stop();
+    }
+}
+
+pub struct PlayerWebsocket {
+    id: Uuid,
+    heartbeat: Instant,
+    game: Addr<Game>,
+}
+
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerWebsocket {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+        match msg {
+            Ok(ws::Message::Ping(msg)) => {
+                self.heartbeat = Instant::now();
+                ctx.pong(&msg)
+            }
+            Ok(ws::Message::Pong(_)) => {
+                self.heartbeat = Instant::now();
+            }
+            Ok(ws::Message::Binary(_)) => {}
+            Ok(ws::Message::Close(reason)) => {
+                ctx.close(reason);
+                ctx.stop();
+            }
+            // Not equiped to handle big messages
+            Ok(ws::Message::Continuation(_)) => {
+                ctx.stop();
+            }
+            Ok(ws::Message::Nop) => {}
+            Ok(ws::Message::Text(s)) => self.handle_incoming_message(s.to_string(), ctx),
+
+            Err(e) => panic!("{}", e),
+        }
+    }
+}
+
+impl Actor for PlayerWebsocket {
+    type Context = ws::WebsocketContext<Self>;
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.heartbeat(ctx);
+        self.game.do_send(RegisterPlayerWebsocket {
+            id: self.id,
+            websocket: ctx.address(),
+        });
+    }
+    fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
+        println!("Stopping websocket");
+        self.game
+            .do_send(PlayerWithWebsocketDisconnected { id: self.id });
+        Running::Stop
+    }
+}
+
+impl PlayerWebsocket {
+    pub fn new(id: Uuid, game: Addr<Game>) -> Self {
+        PlayerWebsocket {
+            id,
+            heartbeat: Instant::now(),
+            game,
+        }
+    }
+    fn heartbeat(&self, ctx: &mut ws::WebsocketContext<Self>) {
+        ctx.run_interval(HEARTBEAT_INTERVAL, |connection, ctx| {
+            if Instant::now().duration_since(connection.heartbeat) > CLIENT_TIMEOUT {
+                println!("Disconnecting from a failed hearatbeat");
+                ctx.stop();
+                return;
+            }
+
+            ctx.ping(b"PING");
+        });
+    }
+    fn handle_incoming_message(&mut self, msg: String, ctx: &mut ws::WebsocketContext<Self>) {
+        let msg = serde_json::from_str::<IncomingWebsocketMessage>(&msg);
+        match msg {
+            Ok(msg) => self.game.do_send(IncomingMessageInternal {
+                initiator: self.id,
+                incoming: msg,
+            }),
+            Err(err) => ctx.notify(OutgoingWebsocketMessage::InvalidAction(err.to_string())),
+        }
+    }
+}
+
+impl Handler<OutgoingWebsocketMessage> for PlayerWebsocket {
+    type Result = ();
+    fn handle(&mut self, msg: OutgoingWebsocketMessage, ctx: &mut Self::Context) -> Self::Result {
+        let msg_serialized = serde_json::to_string(&msg).unwrap();
+        println!("Sending to {:?} msg: {:?}", self.id, msg_serialized);
+        ctx.text(msg_serialized);
+    }
+}
+
+#[derive(Debug)]
 pub struct Player {
     pub role: Option<Role>,
     pub name: String,
