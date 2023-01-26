@@ -32,7 +32,7 @@ pub async fn join_game(
     if game_has_started {
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
     }
-    let player_id = game.send(GetUUID {}).await.unwrap();
+    let player_id = game.send(GetNextUUID {}).await.unwrap();
 
     game.do_send(RegisterPlayerWithWebsocket {
         name: params.username.clone(),

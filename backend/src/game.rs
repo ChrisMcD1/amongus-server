@@ -339,9 +339,9 @@ impl Handler<RegisterPlayerWebsocket> for Game {
     }
 }
 
-impl Handler<GetUUID> for Game {
+impl Handler<GetNextUUID> for Game {
     type Result = Arc<Uuid>;
-    fn handle(&mut self, _msg: GetUUID, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: GetNextUUID, _ctx: &mut Self::Context) -> Self::Result {
         Arc::new(Uuid::from_bytes(self.rng.gen())).clone()
     }
 }

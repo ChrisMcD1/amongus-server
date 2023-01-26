@@ -1,9 +1,7 @@
 use crate::incoming_websocket_messages::IncomingWebsocketMessage;
-use crate::outgoing_websocket_messages::RoleAssignment;
 use crate::player::PlayerWebsocket;
 use actix::prelude::*;
 use std::sync::Arc;
-use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Message)]
@@ -58,15 +56,8 @@ pub struct EndVoting {}
 pub struct StartMeeting {}
 
 #[derive(Message)]
-#[rtype(result = "()")]
-pub struct PlayerInvalidAction {
-    pub id: Uuid,
-    pub error: String,
-}
-
-#[derive(Message)]
 #[rtype(result = "Arc<Uuid>")]
-pub struct GetUUID {}
+pub struct GetNextUUID {}
 
 #[derive(Message, Debug)]
 #[rtype(result = "()")]
