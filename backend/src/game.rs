@@ -16,7 +16,7 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct Game {
     state: GameStateEnum,
-    players_with_websockets: BTreeMap<Uuid, RefCell<PlayerWithWebsocket>>,
+    players_with_websockets: BTreeMap<Uuid, RefCell<Player>>,
     kill_cooldown: Duration,
     pub rng: Pcg32,
     meeting: Option<Meeting>,
@@ -316,7 +316,7 @@ impl Handler<RegisterPlayerWithWebsocket> for Game {
         msg: RegisterPlayerWithWebsocket,
         _ctx: &mut Self::Context,
     ) -> Self::Result {
-        let player = PlayerWithWebsocket::new(&msg.name, msg.id);
+        let player = Player::new(&msg.name, msg.id);
         self.players_with_websockets
             .insert(msg.id, RefCell::new(player));
     }

@@ -12,7 +12,7 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Debug)]
-pub struct PlayerWithWebsocket {
+pub struct Player {
     pub role: Option<Role>,
     pub name: String,
     pub alive: bool,
@@ -20,9 +20,9 @@ pub struct PlayerWithWebsocket {
     pub websocket: Option<Addr<PlayerWebsocket>>,
 }
 
-impl PlayerWithWebsocket {
+impl Player {
     pub fn new(name: &str, id: Uuid) -> Self {
-        PlayerWithWebsocket {
+        Player {
             role: None,
             name: name.to_string(),
             alive: true,
