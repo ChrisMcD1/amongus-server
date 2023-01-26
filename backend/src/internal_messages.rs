@@ -58,10 +58,3 @@ pub struct StartMeeting {}
 #[derive(Message)]
 #[rtype(result = "Arc<Uuid>")]
 pub struct GetNextUUID {}
-
-#[derive(Message, Debug)]
-#[rtype(result = "()")]
-pub struct InternalVote {
-    pub target: Uuid,
-    pub initiator: Uuid,
-}

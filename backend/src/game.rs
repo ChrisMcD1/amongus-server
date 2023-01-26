@@ -147,21 +147,6 @@ impl Handler<StartMeeting> for Game {
     }
 }
 
-impl Handler<InternalVote> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: InternalVote, ctx: &mut Self::Context) -> Self::Result {
-        match self.meeting.as_mut() {
-            Some(meeting) => {
-                meeting.add_vote(msg.initiator, msg.target);
-                if meeting.all_players_voted() {
-                    ctx.notify(EndVoting {});
-                }
-            }
-            None => println!("Cannot vote without a meeting active!"),
-        }
-    }
-}
-
 impl Game {
     fn handle_vote(&mut self, initiator: Uuid, target: Uuid) {
         match self.meeting.as_mut() {
