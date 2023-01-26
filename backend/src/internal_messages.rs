@@ -13,13 +13,13 @@ pub struct IncomingMessageInternal {
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct PlayerWithWebsocketDisconnected {
+pub struct PlayerDisconnected {
     pub id: Uuid,
 }
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct RegisterPlayerWithWebsocket {
+pub struct RegisterPlayer {
     pub id: Uuid,
     pub name: String,
 }

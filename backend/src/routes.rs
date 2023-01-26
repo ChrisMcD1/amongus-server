@@ -34,7 +34,7 @@ pub async fn join_game(
     }
     let player_id = game.send(GetNextUUID {}).await.unwrap();
 
-    game.do_send(RegisterPlayerWithWebsocket {
+    game.do_send(RegisterPlayer {
         name: params.username.clone(),
         id: *player_id,
     });

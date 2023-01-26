@@ -16,7 +16,7 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct Game {
     state: GameStateEnum,
-    players_with_websockets: BTreeMap<Uuid, RefCell<Player>>,
+    players: BTreeMap<Uuid, RefCell<Player>>,
     kill_cooldown: Duration,
     pub rng: Pcg32,
     meeting: Option<Meeting>,
@@ -71,21 +71,21 @@ const VOTING_TIME: Duration = Duration::from_secs(60);
 
 impl Game {
     fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
-        self.players_with_websockets
+        self.players
             .iter()
             .for_each(|player| player.1.borrow().send_outgoing_message(msg.clone()))
     }
     pub fn new(kill_cooldown: Duration, seed: u64) -> Self {
         Game {
             state: GameStateEnum::Lobby,
-            players_with_websockets: BTreeMap::new(),
+            players: BTreeMap::new(),
             kill_cooldown,
             rng: Pcg32::seed_from_u64(seed),
             meeting: None,
         }
     }
     pub fn alive_player_count(&self) -> u32 {
-        self.players_with_websockets
+        self.players
             .iter()
             .filter(|player| player.1.borrow().alive)
             .count() as u32
@@ -107,11 +107,7 @@ impl Game {
                     },
                 ));
                 if let Some(voted_out_user) = voted_out_user_option {
-                    let mut voted_out = self
-                        .players_with_websockets
-                        .get(&voted_out_user)
-                        .unwrap()
-                        .borrow_mut();
+                    let mut voted_out = self.players.get(&voted_out_user).unwrap().borrow_mut();
                     voted_out.alive = false;
                 }
             }
@@ -180,16 +176,8 @@ impl Game {
     }
     fn handle_report(&mut self, initiator: Uuid, corpse_id: Uuid, ctx: &mut Context<Self>) {
         {
-            let initiating_player = self
-                .players_with_websockets
-                .get(&initiator)
-                .unwrap()
-                .borrow();
-            let corpse = self
-                .players_with_websockets
-                .get(&corpse_id)
-                .unwrap()
-                .borrow();
+            let initiating_player = self.players.get(&initiator).unwrap().borrow();
+            let corpse = self.players.get(&corpse_id).unwrap().borrow();
             if !corpse.alive {
                 initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
                     "You cannot report this body, they are alive!".to_string(),
@@ -204,16 +192,8 @@ impl Game {
         self.start_meeting(ctx);
     }
     fn handle_kill(&mut self, initiator: Uuid, target: Uuid) {
-        let mut initiating_player = self
-            .players_with_websockets
-            .get(&initiator)
-            .unwrap()
-            .borrow_mut();
-        let mut target_player = self
-            .players_with_websockets
-            .get(&target)
-            .unwrap()
-            .borrow_mut();
+        let mut initiating_player = self.players.get(&initiator).unwrap().borrow_mut();
+        let mut target_player = self.players.get(&target).unwrap().borrow_mut();
         match initiating_player.role.unwrap() {
             Role::Imposter(ref mut imposter) => {
                 if !imposter.kill_is_off_cooldown() {
@@ -279,15 +259,11 @@ impl Handler<IncomingMessageInternal> for Game {
     }
 }
 
-impl Handler<PlayerWithWebsocketDisconnected> for Game {
+impl Handler<PlayerDisconnected> for Game {
     type Result = ();
-    fn handle(
-        &mut self,
-        msg: PlayerWithWebsocketDisconnected,
-        _ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: PlayerDisconnected, _ctx: &mut Self::Context) -> Self::Result {
         let player = self
-            .players_with_websockets
+            .players
             .remove(&msg.id)
             .expect("Cannot remove player that doesn't exist");
         let player = player.borrow();
@@ -309,28 +285,23 @@ impl Handler<HasGameStarted> for Game {
     }
 }
 
-impl Handler<RegisterPlayerWithWebsocket> for Game {
+impl Handler<RegisterPlayer> for Game {
     type Result = ();
-    fn handle(
-        &mut self,
-        msg: RegisterPlayerWithWebsocket,
-        _ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: RegisterPlayer, _ctx: &mut Self::Context) -> Self::Result {
         let player = Player::new(&msg.name, msg.id);
-        self.players_with_websockets
-            .insert(msg.id, RefCell::new(player));
+        self.players.insert(msg.id, RefCell::new(player));
     }
 }
 
 impl Handler<RegisterPlayerWebsocket> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayerWebsocket, _ctx: &mut Self::Context) -> Self::Result {
-        self.players_with_websockets
+        self.players
             .get_mut(&msg.id)
             .unwrap()
             .borrow_mut()
             .set_websocket_address(msg.websocket);
-        let player = self.players_with_websockets.get(&msg.id).unwrap().borrow();
+        let player = self.players.get(&msg.id).unwrap().borrow();
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: player.name.clone(),
             id: player.id,
@@ -350,21 +321,17 @@ impl Handler<StartGame> for Game {
     type Result = ();
     fn handle(&mut self, _msg: StartGame, _ctx: &mut Self::Context) -> Self::Result {
         self.state = GameStateEnum::InGame;
-        let player_count = self.players_with_websockets.len();
+        let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);
         let mut imposters: HashSet<Uuid> = HashSet::new();
         let mut player_roles: BTreeMap<Uuid, RoleAssignment> = self
-            .players_with_websockets
+            .players
             .iter()
             .map(|player| (player.0.clone(), RoleAssignment::Crewmate))
             .collect();
         while imposter_count > 0 {
             let imposter_index = self.rng.gen_range(0..player_count);
-            let player = self
-                .players_with_websockets
-                .iter()
-                .nth(imposter_index)
-                .unwrap();
+            let player = self.players.iter().nth(imposter_index).unwrap();
             if imposters.contains(player.0) {
                 continue;
             }
@@ -374,7 +341,7 @@ impl Handler<StartGame> for Game {
         }
 
         player_roles.iter().for_each(|role| {
-            self.players_with_websockets
+            self.players
                 .get(&role.0)
                 .unwrap()
                 .borrow_mut()

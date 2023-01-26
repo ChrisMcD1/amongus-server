@@ -115,8 +115,7 @@ impl Actor for PlayerWebsocket {
     }
     fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
         println!("Stopping websocket");
-        self.game
-            .do_send(PlayerWithWebsocketDisconnected { id: self.id });
+        self.game.do_send(PlayerDisconnected { id: self.id });
         Running::Stop
     }
 }
