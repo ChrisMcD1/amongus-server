@@ -52,11 +52,10 @@ impl Player {
             IncomingWebsocketMessage::KillPlayer(kill) => match self.role.unwrap() {
                 Role::Imposter(ref mut imposter) => {
                     if !imposter.kill_is_off_cooldown() {
-                        ctx.address()
-                            .do_send(OutgoingWebsocketMessage::InvalidAction(format!(
-                                "You are not off kill cooldown yet. Try again in {:#?}",
-                                imposter.cooldown_remaining()
-                            )));
+                        ctx.notify(OutgoingWebsocketMessage::InvalidAction(format!(
+                            "You are not off kill cooldown yet. Try again in {:#?}",
+                            imposter.cooldown_remaining()
+                        )));
                         return;
                     }
                     self.role = Some(Role::Imposter(imposter.reset_kill_cooldown()));
@@ -66,11 +65,10 @@ impl Player {
                     });
                 }
                 _ => {
-                    ctx.address()
-                        .do_send(OutgoingWebsocketMessage::InvalidAction(
-                            "Good try, but you can only kill people if you are an imposter!"
-                                .to_string(),
-                        ));
+                    ctx.notify(OutgoingWebsocketMessage::InvalidAction(
+                        "Good try, but you can only kill people if you are an imposter!"
+                            .to_string(),
+                    ));
                 }
             },
             IncomingWebsocketMessage::ReportBody(report) => {
@@ -91,9 +89,7 @@ impl Player {
         let msg = serde_json::from_str::<IncomingWebsocketMessage>(&msg);
         match msg {
             Ok(msg) => self.handle_valid_incoming_message(msg, ctx),
-            Err(err) => ctx
-                .address()
-                .do_send(OutgoingWebsocketMessage::InvalidAction(err.to_string())),
+            Err(err) => ctx.notify(OutgoingWebsocketMessage::InvalidAction(err.to_string())),
         }
     }
 }
@@ -159,10 +155,9 @@ impl Handler<InternalSetPlayerRole> for Player {
             RoleAssignment::Crewmate => Role::Crewmate,
             RoleAssignment::Imposter => Role::Imposter(Imposter::new(msg.kill_cooldown)),
         });
-        ctx.address()
-            .do_send(OutgoingWebsocketMessage::PlayerRole(SetRole {
-                role: msg.role,
-            }));
+        ctx.notify(OutgoingWebsocketMessage::PlayerRole(SetRole {
+            role: msg.role,
+        }));
     }
 }
 
@@ -219,10 +214,9 @@ impl Handler<InternalKillPlayer> for Player {
                     msg: OutgoingWebsocketMessage::SuccessfulKill(),
                 });
                 self.alive = false;
-                ctx.address()
-                    .do_send(OutgoingWebsocketMessage::PlayerDied(PlayerDied {
-                        killer: msg.initiator,
-                    }));
+                ctx.notify(OutgoingWebsocketMessage::PlayerDied(PlayerDied {
+                    killer: msg.initiator,
+                }));
             }
             Role::Imposter(_) => self.game.do_send(PlayerInvalidAction {
                 id: msg.initiator,
