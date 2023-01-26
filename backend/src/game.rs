@@ -37,6 +37,10 @@ impl Meeting {
     pub fn add_vote(&mut self, vote_by: Uuid, vote_for: Uuid) {
         self.votes.insert(vote_by, vote_for);
     }
+    pub fn all_players_voted(&self) -> bool {
+        u32::try_from(self.votes.len()).expect("Shouldn't exceed a u32 number of players lol")
+            == self.alive_player_count
+    }
     pub fn person_voted_out(&self) -> Option<Uuid> {
         let vote_threshold = (f64::from(self.alive_player_count) / 2f64).ceil() as u32;
         let mut votes_for_each: BTreeMap<Uuid, u32> = BTreeMap::new();
@@ -47,16 +51,13 @@ impl Meeting {
                 None => votes_for_each.insert(*vote_for, 1),
             };
         }
-        let highest_person_votes = votes_for_each
-            .iter()
-            .reduce(|accum, item| {
-                if item.1 > accum.1 {
-                    return item;
-                } else {
-                    accum
-                }
-            })
-            .unwrap();
+        let highest_person_votes = votes_for_each.iter().reduce(|accum, item| {
+            if item.1 > accum.1 {
+                return item;
+            } else {
+                accum
+            }
+        })?;
         if *highest_person_votes.1 >= vote_threshold {
             Some(*highest_person_votes.0)
         } else {
@@ -64,6 +65,8 @@ impl Meeting {
         }
     }
 }
+
+const VOTING_TIME: Duration = Duration::from_secs(60);
 
 impl Game {
     fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
@@ -81,11 +84,27 @@ impl Game {
             alive_player_count: 0,
         }
     }
-    pub fn start_meeting(&mut self) {
+    pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
         self.meeting = Some(Meeting::new(self.alive_player_count));
+        println!("Started meeting as {:?}", self.meeting);
+        ctx.notify_later(EndVoting {}, VOTING_TIME);
     }
     pub fn end_meeting(&mut self) {
-        self.meeting = None;
+        println!("Stopping meeting");
+        match self.meeting.as_ref() {
+            Some(meeting) => {
+                let voted_out_user = meeting.person_voted_out();
+                self.meeting = None;
+                self.send_message_to_all_users(OutgoingWebsocketMessage::VotingResults(
+                    VotingResults {
+                        ejected_player: voted_out_user,
+                    },
+                ))
+            }
+            None => {
+                println!("Received Message to end meeting, but it has already ended!")
+            }
+        }
     }
 }
 
@@ -101,6 +120,35 @@ impl Handler<PrintGameState> for Game {
     type Result = ();
     fn handle(&mut self, _msg: PrintGameState, _ctx: &mut Self::Context) -> Self::Result {
         println!("{:#?}", self);
+    }
+}
+
+impl Handler<EndVoting> for Game {
+    type Result = ();
+    fn handle(&mut self, _msg: EndVoting, _ctx: &mut Self::Context) -> Self::Result {
+        self.end_meeting();
+    }
+}
+
+impl Handler<StartMeeting> for Game {
+    type Result = ();
+    fn handle(&mut self, _msg: StartMeeting, ctx: &mut Self::Context) -> Self::Result {
+        self.start_meeting(ctx);
+    }
+}
+
+impl Handler<InternalVote> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: InternalVote, ctx: &mut Self::Context) -> Self::Result {
+        match self.meeting.as_mut() {
+            Some(meeting) => {
+                meeting.add_vote(msg.initiator, msg.target);
+                if meeting.all_players_voted() {
+                    ctx.notify(EndVoting {});
+                }
+            }
+            None => println!("Cannot vote without a meeting active!"),
+        }
     }
 }
 
@@ -139,18 +187,6 @@ impl Handler<RegisterPlayer> for Game {
     }
 }
 
-impl Handler<InternalVote> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: InternalVote, ctx: &mut Self::Context) -> Self::Result {
-        match self.meeting.as_mut() {
-            Some(meeting) => {
-                meeting.add_vote(msg.initiator, msg.target);
-            }
-            None => println!("Cannot vote without a meeting active!"),
-        }
-    }
-}
-
 impl Handler<InternalKillPlayer> for Game {
     type Result = ();
     fn handle(&mut self, msg: InternalKillPlayer, _ctx: &mut Self::Context) -> Self::Result {
@@ -169,11 +205,12 @@ impl Handler<InternalReportBody> for Game {
 
 impl Handler<ReportBodyValidated> for Game {
     type Result = ();
-    fn handle(&mut self, msg: ReportBodyValidated, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ReportBodyValidated, ctx: &mut Self::Context) -> Self::Result {
         self.send_message_to_all_users(OutgoingWebsocketMessage::BodyReported(BodyReported {
             corpse: msg.corpse,
             initiator: msg.initiator,
         }));
+        self.start_meeting(ctx);
     }
 }
 

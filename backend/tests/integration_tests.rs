@@ -220,6 +220,7 @@ mod test_fixtures {
                 .service(hello_world)
                 .service(join_game)
                 .service(start_game)
+                .service(start_meeting)
                 .app_data(Data::new(game.clone())),
         )
         .await
@@ -232,6 +233,7 @@ mod test_fixtures {
                 .service(hello_world)
                 .service(join_game)
                 .service(start_game)
+                .service(start_meeting)
                 .app_data(Data::new(game.clone()))
         })
     }

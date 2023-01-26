@@ -41,6 +41,14 @@ pub struct Disconnected {}
 
 #[derive(Message)]
 #[rtype(result = "()")]
+pub struct EndVoting {}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct StartMeeting {}
+
+#[derive(Message)]
+#[rtype(result = "()")]
 pub struct PlayerInvalidAction {
     pub id: Uuid,
     pub error: String,

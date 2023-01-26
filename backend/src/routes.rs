@@ -50,3 +50,13 @@ pub async fn start_game(
     game.do_send(StartGame {});
     "Game Started"
 }
+
+#[post("/start-meeting")]
+pub async fn start_meeting(
+    _req: HttpRequest,
+    _stream: Payload,
+    game: Data<Addr<Game>>,
+) -> impl Responder {
+    game.do_send(StartMeeting {});
+    "Meeting Started!"
+}

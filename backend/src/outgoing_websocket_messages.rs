@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "PascalCase")]
 #[rtype(result = "()")]
 pub enum OutgoingWebsocketMessage {
     ChatMessage(ChatMessage),
@@ -13,9 +14,18 @@ pub enum OutgoingWebsocketMessage {
     SuccessfulKill(),
     InvalidAction(String),
     BodyReported(BodyReported),
+    VotingResults(VotingResults),
 }
 
 #[derive(Message, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
+pub struct VotingResults {
+    pub ejected_player: Option<Uuid>,
+}
+
+#[derive(Message, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct BodyReported {
     pub corpse: Uuid,
@@ -23,6 +33,7 @@ pub struct BodyReported {
 }
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct ForwardedOutgoingWebsocketMessage {
     pub destination: Uuid,
@@ -30,18 +41,21 @@ pub struct ForwardedOutgoingWebsocketMessage {
 }
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct PlayerDied {
     pub killer: Uuid,
 }
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct ChatMessage {
     pub contents: String,
 }
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct PlayerStatus {
     pub username: String,
@@ -50,6 +64,7 @@ pub struct PlayerStatus {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub enum PlayerConnectionStatus {
     New,
     Disconnected,
@@ -57,24 +72,28 @@ pub enum PlayerConnectionStatus {
 }
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct GameState {
     pub state: GameStateEnum,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub enum GameStateEnum {
     Lobby,
     InGame,
 }
 
 #[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct SetRole {
     pub role: RoleAssignment,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub enum RoleAssignment {
     Imposter,
     Crewmate,
