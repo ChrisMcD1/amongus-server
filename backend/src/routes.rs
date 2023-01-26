@@ -1,8 +1,6 @@
 use crate::game::*;
 use crate::internal_messages::*;
-use crate::player::Player;
 use crate::player::PlayerWebsocket;
-use crate::player::PlayerWithWebsocket;
 use actix::prelude::*;
 use actix_web::post;
 use actix_web::{

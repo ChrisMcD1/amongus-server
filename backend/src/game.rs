@@ -16,8 +16,6 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct Game {
     state: GameStateEnum,
-    alive_player_count: u32,
-    players: BTreeMap<Uuid, Addr<Player>>,
     players_with_websockets: BTreeMap<Uuid, RefCell<PlayerWithWebsocket>>,
     kill_cooldown: Duration,
     pub rng: Pcg32,
@@ -73,9 +71,6 @@ const VOTING_TIME: Duration = Duration::from_secs(60);
 
 impl Game {
     fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
-        self.players
-            .iter()
-            .for_each(|player| player.1.do_send(msg.clone()));
         self.players_with_websockets
             .iter()
             .for_each(|player| player.1.borrow().send_outgoing_message(msg.clone()))
@@ -83,16 +78,20 @@ impl Game {
     pub fn new(kill_cooldown: Duration, seed: u64) -> Self {
         Game {
             state: GameStateEnum::Lobby,
-            players: BTreeMap::new(),
             players_with_websockets: BTreeMap::new(),
             kill_cooldown,
             rng: Pcg32::seed_from_u64(seed),
             meeting: None,
-            alive_player_count: 0,
         }
     }
+    pub fn alive_player_count(&self) -> u32 {
+        self.players_with_websockets
+            .iter()
+            .filter(|player| player.1.borrow().alive)
+            .count() as u32
+    }
     pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
-        self.meeting = Some(Meeting::new(self.alive_player_count));
+        self.meeting = Some(Meeting::new(self.alive_player_count()));
         println!("Started meeting as {:?}", self.meeting);
         ctx.notify_later(EndVoting {}, VOTING_TIME);
     }
@@ -108,10 +107,6 @@ impl Game {
                     },
                 ));
                 if let Some(voted_out_user) = voted_out_user_option {
-                    self.players
-                        .get(&voted_out_user)
-                        .unwrap()
-                        .do_send(SetPlayerAlive { alive: false });
                     let mut voted_out = self
                         .players_with_websockets
                         .get(&voted_out_user)
@@ -304,18 +299,6 @@ impl Handler<PlayerWithWebsocketDisconnected> for Game {
     }
 }
 
-impl Handler<PlayerDisconnected> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: PlayerDisconnected, _ctx: &mut Self::Context) -> Self::Result {
-        self.players.remove(&msg.id);
-        self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            username: msg.name,
-            id: msg.id,
-            status: PlayerConnectionStatus::Disconnected,
-        }));
-    }
-}
-
 impl Handler<HasGameStarted> for Game {
     type Result = bool;
     fn handle(&mut self, _msg: HasGameStarted, _ctx: &mut Self::Context) -> Self::Result {
@@ -356,78 +339,10 @@ impl Handler<RegisterPlayerWebsocket> for Game {
     }
 }
 
-impl Handler<RegisterPlayer> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: RegisterPlayer, _ctx: &mut Self::Context) -> Self::Result {
-        self.players.insert(msg.id, msg.player);
-        self.alive_player_count = self.alive_player_count + 1;
-        self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            username: msg.name,
-            id: msg.id,
-            status: PlayerConnectionStatus::New,
-        }));
-    }
-}
-
-impl Handler<InternalKillPlayer> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: InternalKillPlayer, _ctx: &mut Self::Context) -> Self::Result {
-        let target = self.players.get(&msg.target).unwrap();
-        target.do_send(msg);
-    }
-}
-
-impl Handler<InternalReportBody> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: InternalReportBody, _ctx: &mut Self::Context) -> Self::Result {
-        self.alive_player_count = self.alive_player_count - 1;
-        self.players.get(&msg.corpse).unwrap().do_send(msg);
-    }
-}
-
-impl Handler<ReportBodyValidated> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: ReportBodyValidated, ctx: &mut Self::Context) -> Self::Result {
-        self.send_message_to_all_users(OutgoingWebsocketMessage::BodyReported(BodyReported {
-            corpse: msg.corpse,
-            initiator: msg.initiator,
-        }));
-        self.start_meeting(ctx);
-    }
-}
-
-impl Handler<PlayerInvalidAction> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: PlayerInvalidAction, _ctx: &mut Self::Context) -> Self::Result {
-        self.players
-            .get(&msg.id)
-            .unwrap()
-            .do_send(OutgoingWebsocketMessage::InvalidAction(msg.error));
-    }
-}
-
 impl Handler<GetUUID> for Game {
     type Result = Arc<Uuid>;
     fn handle(&mut self, _msg: GetUUID, _ctx: &mut Self::Context) -> Self::Result {
         Arc::new(Uuid::from_bytes(self.rng.gen())).clone()
-    }
-}
-
-impl Handler<GetKillCooldown> for Game {
-    type Result = Arc<Duration>;
-    fn handle(&mut self, _msg: GetKillCooldown, _ctx: &mut Self::Context) -> Self::Result {
-        Arc::new(self.kill_cooldown)
-    }
-}
-
-impl Handler<ForwardedOutgoingWebsocketMessage> for Game {
-    type Result = ();
-    fn handle(
-        &mut self,
-        msg: ForwardedOutgoingWebsocketMessage,
-        _ctx: &mut Self::Context,
-    ) -> Self::Result {
-        self.players.get(&msg.destination).unwrap().do_send(msg.msg);
     }
 }
 

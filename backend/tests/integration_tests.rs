@@ -124,6 +124,40 @@ async fn one_player_each_role() {
 }
 
 #[test]
+async fn other_player_receives_disconnect() {
+    let server = test_fixtures::get_test_server();
+
+    let (_resp, mut chris_connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let (_resp, mut kate_connection) = Client::new()
+        .ws(server.url("/join-game?username=Kate"))
+        .connect()
+        .await
+        .unwrap();
+
+    kate_connection.close().await.unwrap();
+
+    let _chris_join = chris_connection.next().await;
+    let _kate_join = chris_connection.next().await;
+
+    let kate_disconnect_frame = chris_connection.next().await.unwrap().unwrap();
+
+    let kate_disconnect = test_fixtures::get_websocket_frame_data(kate_disconnect_frame).unwrap();
+
+    match kate_disconnect {
+        OutgoingWebsocketMessage::PlayerStatus(player_status) => {
+            assert_eq!(player_status.username, "Kate");
+            assert_eq!(player_status.status, PlayerConnectionStatus::Disconnected);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+}
+
+#[test]
 async fn imposter_kills_sucessfully() {
     let server = test_fixtures::get_test_server();
 
