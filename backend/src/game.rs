@@ -93,13 +93,19 @@ impl Game {
         println!("Stopping meeting");
         match self.meeting.as_ref() {
             Some(meeting) => {
-                let voted_out_user = meeting.person_voted_out();
+                let voted_out_user_option = meeting.person_voted_out();
                 self.meeting = None;
                 self.send_message_to_all_users(OutgoingWebsocketMessage::VotingResults(
                     VotingResults {
-                        ejected_player: voted_out_user,
+                        ejected_player: voted_out_user_option,
                     },
-                ))
+                ));
+                if let Some(voted_out_user) = voted_out_user_option {
+                    self.players
+                        .get(&voted_out_user)
+                        .unwrap()
+                        .do_send(SetPlayerAlive { alive: false });
+                }
             }
             None => {
                 println!("Received Message to end meeting, but it has already ended!")

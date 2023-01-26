@@ -166,6 +166,13 @@ impl Handler<InternalSetPlayerRole> for Player {
     }
 }
 
+impl Handler<SetPlayerAlive> for Player {
+    type Result = ();
+    fn handle(&mut self, msg: SetPlayerAlive, _ctx: &mut Self::Context) -> Self::Result {
+        self.alive = msg.alive;
+    }
+}
+
 impl Handler<OutgoingWebsocketMessage> for Player {
     type Result = ();
     fn handle(&mut self, msg: OutgoingWebsocketMessage, ctx: &mut Self::Context) -> Self::Result {

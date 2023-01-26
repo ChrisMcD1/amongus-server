@@ -69,6 +69,12 @@ pub struct InternalSetPlayerRole {
     pub kill_cooldown: Duration,
 }
 
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct SetPlayerAlive {
+    pub alive: bool,
+}
+
 #[derive(Message, Debug)]
 #[rtype(result = "()")]
 pub struct InternalKillPlayer {
