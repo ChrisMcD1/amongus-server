@@ -80,6 +80,7 @@ impl Game {
                     let mut voted_out = self.players.get(&voted_out_user).unwrap().borrow_mut();
                     voted_out.alive = false;
                 }
+                self.end_game_if_over();
             }
             None => {
                 println!("Received Message to end meeting, but it has already ended!")
@@ -95,7 +96,7 @@ impl Game {
             None
         }
     }
-    pub fn end_game_if_over(&mut self) {
+    pub fn end_game_if_over(&self) {
         match self.has_winner() {
             Some(winner) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
@@ -195,7 +196,8 @@ impl Game {
                             .send_outgoing_message(OutgoingWebsocketMessage::SuccessfulKill());
                         target_player.send_outgoing_message(OutgoingWebsocketMessage::PlayerDied(
                             PlayerDied { killer: initiator },
-                        ))
+                        ));
+                        self.end_game_if_over();
                     }
                     Role::Imposter(_) => initiating_player.send_outgoing_message(
                         OutgoingWebsocketMessage::InvalidAction(
