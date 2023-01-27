@@ -22,53 +22,6 @@ pub struct Game {
     meeting: Option<Meeting>,
 }
 
-#[derive(Debug)]
-pub struct Meeting {
-    alive_player_count: u32,
-    votes: BTreeMap<Uuid, Uuid>,
-}
-
-impl Meeting {
-    pub fn new(alive_player_count: u32) -> Self {
-        Meeting {
-            alive_player_count,
-            votes: BTreeMap::new(),
-        }
-    }
-    pub fn add_vote(&mut self, vote_by: Uuid, vote_for: Uuid) {
-        self.votes.insert(vote_by, vote_for);
-    }
-    pub fn all_players_voted(&self) -> bool {
-        u32::try_from(self.votes.len()).expect("Shouldn't exceed a u32 number of players lol")
-            == self.alive_player_count
-    }
-    pub fn person_voted_out(&self) -> Option<Uuid> {
-        let vote_threshold = (f64::from(self.alive_player_count) / 2f64).ceil() as u32;
-        let mut votes_for_each: BTreeMap<Uuid, u32> = BTreeMap::new();
-        for vote in self.votes.iter() {
-            let vote_for = vote.1;
-            match votes_for_each.get(vote_for) {
-                Some(votes) => votes_for_each.insert(*vote_for, votes + 1),
-                None => votes_for_each.insert(*vote_for, 1),
-            };
-        }
-        let highest_person_votes = votes_for_each.iter().reduce(|accum, item| {
-            if item.1 > accum.1 {
-                return item;
-            } else {
-                accum
-            }
-        })?;
-        if *highest_person_votes.1 >= vote_threshold {
-            Some(*highest_person_votes.0)
-        } else {
-            None
-        }
-    }
-}
-
-const VOTING_TIME: Duration = Duration::from_secs(60);
-
 impl Game {
     fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
         self.players
@@ -348,3 +301,50 @@ fn get_imposter_count(player_count: usize) -> usize {
         return 3;
     }
 }
+
+#[derive(Debug)]
+pub struct Meeting {
+    alive_player_count: u32,
+    votes: BTreeMap<Uuid, Uuid>,
+}
+
+impl Meeting {
+    pub fn new(alive_player_count: u32) -> Self {
+        Meeting {
+            alive_player_count,
+            votes: BTreeMap::new(),
+        }
+    }
+    pub fn add_vote(&mut self, vote_by: Uuid, vote_for: Uuid) {
+        self.votes.insert(vote_by, vote_for);
+    }
+    pub fn all_players_voted(&self) -> bool {
+        u32::try_from(self.votes.len()).expect("Shouldn't exceed a u32 number of players lol")
+            == self.alive_player_count
+    }
+    pub fn person_voted_out(&self) -> Option<Uuid> {
+        let vote_threshold = (f64::from(self.alive_player_count) / 2f64).ceil() as u32;
+        let mut votes_for_each: BTreeMap<Uuid, u32> = BTreeMap::new();
+        for vote in self.votes.iter() {
+            let vote_for = vote.1;
+            match votes_for_each.get(vote_for) {
+                Some(votes) => votes_for_each.insert(*vote_for, votes + 1),
+                None => votes_for_each.insert(*vote_for, 1),
+            };
+        }
+        let highest_person_votes = votes_for_each.iter().reduce(|accum, item| {
+            if item.1 > accum.1 {
+                return item;
+            } else {
+                accum
+            }
+        })?;
+        if *highest_person_votes.1 >= vote_threshold {
+            Some(*highest_person_votes.0)
+        } else {
+            None
+        }
+    }
+}
+
+const VOTING_TIME: Duration = Duration::from_secs(60);
