@@ -15,6 +15,13 @@ pub enum OutgoingWebsocketMessage {
     InvalidAction(String),
     BodyReported(BodyReported),
     VotingResults(VotingResults),
+    GameOver(Winner),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Winner {
+    Imposters,
+    Crewmates,
 }
 
 #[derive(Message, Debug, Clone, Serialize, Deserialize)]

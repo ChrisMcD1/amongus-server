@@ -37,14 +37,31 @@ impl Game {
             meeting: None,
         }
     }
-    pub fn alive_player_count(&self) -> u32 {
+    pub fn alive_players(&self) -> u32 {
         self.players
             .iter()
             .filter(|player| player.1.borrow().alive)
             .count() as u32
     }
+    pub fn crewmates_alive(&self) -> u32 {
+        self.players
+            .iter()
+            .filter(|player| player.1.borrow().role.unwrap() == Role::Crewmate)
+            .filter(|player| player.1.borrow().alive)
+            .count() as u32
+    }
+    pub fn imposters_alive(&self) -> u32 {
+        self.players
+            .iter()
+            .filter(|player| match player.1.borrow().role.unwrap() {
+                Role::Imposter(_) => true,
+                _ => false,
+            })
+            .filter(|player| player.1.borrow().alive)
+            .count() as u32
+    }
     pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
-        self.meeting = Some(Meeting::new(self.alive_player_count()));
+        self.meeting = Some(Meeting::new(self.alive_players()));
         println!("Started meeting as {:?}", self.meeting);
         ctx.notify_later(EndVoting {}, VOTING_TIME);
     }
@@ -67,6 +84,23 @@ impl Game {
             None => {
                 println!("Received Message to end meeting, but it has already ended!")
             }
+        }
+    }
+    pub fn has_winner(&self) -> Option<Winner> {
+        if self.crewmates_alive() == 0 {
+            Some(Winner::Imposters)
+        } else if self.imposters_alive() == 0 {
+            Some(Winner::Imposters)
+        } else {
+            None
+        }
+    }
+    pub fn end_game_if_over(&mut self) {
+        match self.has_winner() {
+            Some(winner) => {
+                self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
+            }
+            None => (),
         }
     }
 }
