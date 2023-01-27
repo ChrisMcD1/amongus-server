@@ -18,7 +18,7 @@ pub enum OutgoingWebsocketMessage {
     GameOver(Winner),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Winner {
     Imposters,
     Crewmates,

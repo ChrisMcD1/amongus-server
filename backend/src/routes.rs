@@ -42,8 +42,6 @@ pub async fn join_game(
     let player_websocket = PlayerWebsocket::new(*player_id, game.get_ref().clone());
     let player_websocket_active = ws::start(player_websocket, &req, stream).unwrap();
 
-    game.do_send(PrintGameState {});
-
     player_websocket_active
 }
 

@@ -67,31 +67,33 @@ impl Game {
     }
     pub fn end_meeting(&mut self) {
         println!("Stopping meeting");
-        match self.meeting.as_ref() {
-            Some(meeting) => {
-                let voted_out_user_option = meeting.person_voted_out();
-                self.meeting = None;
-                self.send_message_to_all_users(OutgoingWebsocketMessage::VotingResults(
-                    VotingResults {
-                        ejected_player: voted_out_user_option,
-                    },
-                ));
-                if let Some(voted_out_user) = voted_out_user_option {
-                    let mut voted_out = self.players.get(&voted_out_user).unwrap().borrow_mut();
-                    voted_out.alive = false;
+        {
+            match self.meeting.as_ref() {
+                Some(meeting) => {
+                    let voted_out_user_option = meeting.person_voted_out();
+                    self.meeting = None;
+                    self.send_message_to_all_users(OutgoingWebsocketMessage::VotingResults(
+                        VotingResults {
+                            ejected_player: voted_out_user_option,
+                        },
+                    ));
+                    if let Some(voted_out_user) = voted_out_user_option {
+                        let mut voted_out = self.players.get(&voted_out_user).unwrap().borrow_mut();
+                        voted_out.alive = false;
+                    }
                 }
-                self.end_game_if_over();
-            }
-            None => {
-                println!("Received Message to end meeting, but it has already ended!")
+                None => {
+                    println!("Received Message to end meeting, but it has already ended!")
+                }
             }
         }
+        self.end_game_if_over();
     }
     pub fn has_winner(&self) -> Option<Winner> {
         if self.crewmates_alive() == 0 {
             Some(Winner::Imposters)
         } else if self.imposters_alive() == 0 {
-            Some(Winner::Imposters)
+            Some(Winner::Crewmates)
         } else {
             None
         }
@@ -197,7 +199,10 @@ impl Game {
                         target_player.send_outgoing_message(OutgoingWebsocketMessage::PlayerDied(
                             PlayerDied { killer: initiator },
                         ));
-                        self.end_game_if_over();
+                        println!(
+                            "All killing has ended, the new game state is:\n {:#?}",
+                            self
+                        );
                     }
                     Role::Imposter(_) => initiating_player.send_outgoing_message(
                         OutgoingWebsocketMessage::InvalidAction(
@@ -222,6 +227,7 @@ impl Handler<IncomingMessageInternal> for Game {
         match msg.incoming {
             IncomingWebsocketMessage::KillPlayer(kill) => {
                 self.handle_kill(msg.initiator, kill.target);
+                self.end_game_if_over();
             }
             IncomingWebsocketMessage::ReportBody(report) => {
                 self.handle_report(msg.initiator, report.corpse, ctx);

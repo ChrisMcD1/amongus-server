@@ -158,7 +158,7 @@ async fn other_player_receives_disconnect() {
 }
 
 #[test]
-async fn imposter_kills_sucessfully() {
+async fn imposter_kills_sucessfully_and_ends_game() {
     let server = test_fixtures::get_test_server();
 
     let (_resp, mut crewmate_connection) = Client::new()
@@ -227,6 +227,95 @@ async fn imposter_kills_sucessfully() {
     match crewmate_death {
         OutgoingWebsocketMessage::PlayerDied(player_died) => {
             assert_eq!(player_died.killer, imposter_id);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+
+    let imposters_won_frame = imposter_connection.next().await.unwrap().unwrap();
+    let imposter_won = test_fixtures::get_websocket_frame_data(imposters_won_frame).unwrap();
+
+    match imposter_won {
+        OutgoingWebsocketMessage::GameOver(winner) => {
+            assert_eq!(winner, Winner::Imposters);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+}
+
+#[test]
+async fn crewmate_votes_out_imposter_and_ends_game() {
+    let server = test_fixtures::get_test_server();
+
+    let (_resp, mut crewmate_connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let (_resp, mut imposter_connection) = Client::new()
+        .ws(server.url("/join-game?username=Kate"))
+        .connect()
+        .await
+        .unwrap();
+
+    let _ = server.post("/start-game").send().await;
+
+    let _crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
+    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
+    let _crewmate_role_assign = crewmate_connection.next().await;
+    let _crewmate_game_start = crewmate_connection.next().await;
+    let _imposter_join = imposter_connection.next().await;
+    let _imposter_role_assign = imposter_connection.next().await;
+    let _imposter_game_start = imposter_connection.next().await;
+
+    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
+
+    let imposter_id = match imposter_join {
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        _ => unreachable!(),
+    };
+
+    let _ = server.post("/start-meeting").send().await;
+
+    crewmate_connection
+        .send(awc::ws::Message::Text(
+            serde_json::to_string(&IncomingWebsocketMessage::Vote(Vote {
+                target: imposter_id,
+            }))
+            .unwrap()
+            .into(),
+        ))
+        .await
+        .unwrap();
+
+    imposter_connection
+        .send(awc::ws::Message::Text(
+            serde_json::to_string(&IncomingWebsocketMessage::Vote(Vote {
+                target: imposter_id,
+            }))
+            .unwrap()
+            .into(),
+        ))
+        .await
+        .unwrap();
+
+    let imposter_voted_out_frame = imposter_connection.next().await.unwrap().unwrap();
+    let imposter_voted_out =
+        test_fixtures::get_websocket_frame_data(imposter_voted_out_frame).unwrap();
+
+    match imposter_voted_out {
+        OutgoingWebsocketMessage::VotingResults(voted_out) => {
+            assert_eq!(voted_out.ejected_player.unwrap(), imposter_id);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+
+    let crewmates_won_frame = imposter_connection.next().await.unwrap().unwrap();
+    let crewmates_won = test_fixtures::get_websocket_frame_data(crewmates_won_frame).unwrap();
+
+    match crewmates_won {
+        OutgoingWebsocketMessage::GameOver(winner) => {
+            assert_eq!(winner, Winner::Crewmates);
         }
         _ => assert!(false, "Parsed to wrong thing"),
     }
