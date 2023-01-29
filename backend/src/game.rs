@@ -153,7 +153,7 @@ impl Game {
         {
             let initiating_player = self.players.get(&initiator).unwrap().borrow();
             let corpse = self.players.get(&corpse_id).unwrap().borrow();
-            if !corpse.alive {
+            if corpse.alive {
                 initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
                     "You cannot report this body, they are alive!".to_string(),
                 ));
@@ -235,7 +235,21 @@ impl Handler<IncomingMessageInternal> for Game {
             IncomingWebsocketMessage::Vote(vote) => {
                 self.handle_vote(msg.initiator, vote.target);
             }
+            IncomingWebsocketMessage::ChooseColor(choose_color) => {
+                self.players
+                    .get(&msg.initiator)
+                    .unwrap()
+                    .borrow_mut()
+                    .set_color(choose_color.color);
+            }
         }
+    }
+}
+
+impl Handler<GetPlayerColor> for Game {
+    type Result = String;
+    fn handle(&mut self, msg: GetPlayerColor, ctx: &mut Self::Context) -> Self::Result {
+        self.players.get(&msg.id).unwrap().borrow().color.clone()
     }
 }
 

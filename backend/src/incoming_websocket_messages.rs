@@ -9,6 +9,7 @@ pub enum IncomingWebsocketMessage {
     KillPlayer(KillPlayer),
     ReportBody(ReportBody),
     Vote(Vote),
+    ChooseColor(ChooseColor),
 }
 
 #[derive(Message, Debug, Deserialize, Serialize)]
@@ -30,4 +31,11 @@ pub struct KillPlayer {
 #[rtype(result = "()")]
 pub struct Vote {
     pub target: Uuid,
+}
+
+#[derive(Message, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
+pub struct ChooseColor {
+    pub color: String,
 }

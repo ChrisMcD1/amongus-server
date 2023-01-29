@@ -58,3 +58,9 @@ pub struct StartMeeting {}
 #[derive(Message)]
 #[rtype(result = "Arc<Uuid>")]
 pub struct GetNextUUID {}
+
+#[derive(Message)]
+#[rtype(result = "String")]
+pub struct GetPlayerColor {
+    pub id: Uuid,
+}

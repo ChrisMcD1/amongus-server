@@ -9,6 +9,7 @@ use actix_web::{
     HttpRequest, Responder,
 };
 use serde::Deserialize;
+use uuid::Uuid;
 
 use actix_web_actors::ws;
 #[get("/hello")]
@@ -63,4 +64,20 @@ pub async fn start_meeting(
 ) -> impl Responder {
     game.do_send(StartMeeting {});
     "Meeting Started!"
+}
+
+#[derive(Deserialize)]
+pub struct GetPlayerColorParams {
+    id: Uuid,
+}
+
+#[get("/get-player-color")]
+pub async fn get_player_color(
+    _req: HttpRequest,
+    _stream: Payload,
+    params: Query<GetPlayerColorParams>,
+    game: Data<Addr<Game>>,
+) -> impl Responder {
+    let color = game.send(GetPlayerColor { id: params.id }).await.unwrap();
+    color
 }

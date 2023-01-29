@@ -17,6 +17,7 @@ async fn main() -> std::io::Result<()> {
             .service(join_game)
             .service(start_game)
             .service(start_meeting)
+            .service(get_player_color)
             .app_data(Data::new(game.clone()))
     })
     .bind("127.0.0.1:9090")?

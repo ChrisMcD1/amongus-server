@@ -16,6 +16,7 @@ pub struct Player {
     pub role: Option<Role>,
     pub name: String,
     pub alive: bool,
+    pub color: String,
     pub id: Uuid,
     pub websocket: Option<Addr<PlayerWebsocket>>,
 }
@@ -26,6 +27,7 @@ impl Player {
             role: None,
             name: name.to_string(),
             alive: true,
+            color: "#FFFFFF".to_string(),
             id,
             websocket: None,
         }
@@ -61,6 +63,9 @@ impl Player {
             RoleAssignment::Imposter => Role::Imposter(Imposter::new(kill_cooldown)),
         });
         self.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole { role }));
+    }
+    pub fn set_color(&mut self, color: String) {
+        self.color = color;
     }
 }
 

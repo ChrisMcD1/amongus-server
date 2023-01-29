@@ -158,6 +158,84 @@ async fn other_player_receives_disconnect() {
 }
 
 #[test]
+async fn imposter_kills_sucessfully_and_gets_reported() {
+    let server = test_fixtures::get_test_server();
+
+    let (_resp, mut crewmate_connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let (_resp, mut imposter_connection) = Client::new()
+        .ws(server.url("/join-game?username=Kate"))
+        .connect()
+        .await
+        .unwrap();
+
+    let (_resp, mut second_crewmate_connection) = Client::new()
+        .ws(server.url("/join-game?username=Ski"))
+        .connect()
+        .await
+        .unwrap();
+
+    let _ = server.post("/start-game").send().await;
+
+    let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
+    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
+    let _second_crewmate_join = crewmate_connection.next().await;
+    let _crewmate_role_assign = crewmate_connection.next().await;
+    let _crewmate_game_start = crewmate_connection.next().await;
+    let _imposter_join = imposter_connection.next().await;
+    let _imposter_role_assign = imposter_connection.next().await;
+    let _second_crewmate_join = imposter_connection.next().await;
+    let _imposter_game_start = imposter_connection.next().await;
+    let _second_crewmate_join = second_crewmate_connection.next().await;
+    let _second_crewmate_role_assign = second_crewmate_connection.next().await;
+    let _second_crewmate_game_start = second_crewmate_connection.next().await;
+
+    let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
+    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
+
+    let crewmate_id = match crewmate_join {
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        _ => unreachable!(),
+    };
+
+    imposter_connection
+        .send(awc::ws::Message::Text(
+            serde_json::to_string(&IncomingWebsocketMessage::KillPlayer(KillPlayer {
+                target: crewmate_id,
+            }))
+            .unwrap()
+            .into(),
+        ))
+        .await
+        .unwrap();
+
+    second_crewmate_connection
+        .send(awc::ws::Message::Text(
+            serde_json::to_string(&IncomingWebsocketMessage::ReportBody(ReportBody {
+                corpse: crewmate_id,
+            }))
+            .unwrap()
+            .into(),
+        ))
+        .await
+        .unwrap();
+
+    let meeting_began_frame = second_crewmate_connection.next().await.unwrap().unwrap();
+    let meeting_began = test_fixtures::get_websocket_frame_data(meeting_began_frame).unwrap();
+
+    match meeting_began {
+        OutgoingWebsocketMessage::BodyReported(body_reported) => {
+            assert_eq!(body_reported.corpse, crewmate_id);
+        }
+        _ => assert!(false, "Parsed to wrong thing"),
+    }
+}
+
+#[test]
 async fn imposter_kills_sucessfully_and_ends_game() {
     let server = test_fixtures::get_test_server();
 
@@ -321,6 +399,85 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
     }
 }
 
+#[test]
+#[ignore]
+async fn player_changes_color() {
+    //    let server = test_fixtures::get_test_server();
+    //
+    //    let (_resp, mut connection) = Client::new()
+    //        .ws(server.url("/join-game?username=Chris"))
+    //        .connect()
+    //        .await
+    //        .unwrap();
+    //
+    //    let join_message_frame = connection.next().await.unwrap().unwrap();
+    //    let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
+    //
+    //    let player_id = match join_message {
+    //        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+    //        _ => unreachable!(),
+    //    };
+    //
+    //    let route = format!("/get-player-color?id={player_id}");
+    //    println!("the route is {route}");
+    //    let return_body = server
+    //        .get(route)
+    //        .send()
+    //        .await
+    //        .unwrap()
+    //        .body()
+    //        .await
+    //        .unwrap()
+    //        .to_vec();
+    //    //    println!("return body is {return_body}");
+    //
+    //    let color_from_server = String::from_utf8(
+    //        server
+    //            .get(route)
+    //            .send()
+    //            .await
+    //            .unwrap()
+    //            .body()
+    //            .await
+    //            .unwrap()
+    //            .to_vec(),
+    //    )
+    //    .unwrap();
+    //
+    //    assert_eq!(color_from_server, "#FFFFFF".to_string());
+
+    //    let color = "#ABABAB".to_string();
+    //
+    //    connection
+    //        .send(awc::ws::Message::Text(
+    //            serde_json::to_string(&IncomingWebsocketMessage::ChooseColor(ChooseColor {
+    //                color: color.clone(),
+    //            }))
+    //            .unwrap()
+    //            .into(),
+    //        ))
+    //        .await
+    //        .unwrap();
+    //
+    //    let route = format!("/get-player-color?id={player_id}");
+    //    println!("the route is {route}");
+    //
+    //    let color_from_server = String::from_utf8(
+    //        server
+    //            .get(route)
+    //            .send()
+    //            .await
+    //            .unwrap()
+    //            .body()
+    //            .await
+    //            .unwrap()
+    //            .to_vec(),
+    //    )
+    //    .unwrap();
+    //
+    //    assert_eq!(color_from_server, color);
+}
+
 mod test_fixtures {
     use actix_http::ws::Frame;
     use actix_http::Request;
@@ -329,6 +486,7 @@ mod test_fixtures {
     use actix_web::dev::{Service, ServiceResponse};
     use actix_web::error::Error;
     use among_us_server::outgoing_websocket_messages::OutgoingWebsocketMessage;
+    use std::string::String;
     use std::time::Duration;
 
     use super::*;
