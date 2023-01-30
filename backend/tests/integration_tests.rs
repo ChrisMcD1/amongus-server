@@ -7,6 +7,7 @@ use among_us_server::outgoing_websocket_messages::*;
 use among_us_server::routes::*;
 use awc::Client;
 use futures_util::{SinkExt as _, StreamExt as _};
+use test_fixtures::assert_connection_recieves_message;
 
 #[test]
 async fn responds_hi() {
@@ -338,13 +339,7 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
 
     let _ = server.post("/start-game").send().await;
 
-    let _crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
-    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-    let _crewmate_role_assign = crewmate_connection.next().await;
-    let _crewmate_game_start = crewmate_connection.next().await;
-    let _imposter_join = imposter_connection.next().await;
-    let _imposter_role_assign = imposter_connection.next().await;
-    let _imposter_game_start = imposter_connection.next().await;
+    let imposter_join = imposter_connection.next().await.unwrap().unwrap();
 
     let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
 
@@ -377,26 +372,14 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
         .await
         .unwrap();
 
-    let imposter_voted_out_frame = imposter_connection.next().await.unwrap().unwrap();
-    let imposter_voted_out =
-        test_fixtures::get_websocket_frame_data(imposter_voted_out_frame).unwrap();
+    let imposter_voted_out_msg = OutgoingWebsocketMessage::VotingResults(VotingResults {
+        ejected_player: Some(imposter_id),
+    });
 
-    match imposter_voted_out {
-        OutgoingWebsocketMessage::VotingResults(voted_out) => {
-            assert_eq!(voted_out.ejected_player.unwrap(), imposter_id);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
+    assert_connection_recieves_message(&mut imposter_connection, imposter_voted_out_msg).await;
 
-    let crewmates_won_frame = imposter_connection.next().await.unwrap().unwrap();
-    let crewmates_won = test_fixtures::get_websocket_frame_data(crewmates_won_frame).unwrap();
-
-    match crewmates_won {
-        OutgoingWebsocketMessage::GameOver(winner) => {
-            assert_eq!(winner, Winner::Crewmates);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
+    let crewmates_won_message = OutgoingWebsocketMessage::GameOver(Winner::Crewmates);
+    assert_connection_recieves_message(&mut imposter_connection, crewmates_won_message).await;
 }
 
 #[test]
@@ -479,13 +462,16 @@ async fn player_changes_color() {
 }
 
 mod test_fixtures {
-    use actix_http::ws::Frame;
+    use actix_codec::Framed;
+    use actix_http::h1::ClientCodec;
+    use actix_http::ws::{Codec, Frame};
     use actix_http::Request;
     use actix_test;
     use actix_web::body::BoxBody;
     use actix_web::dev::{Service, ServiceResponse};
     use actix_web::error::Error;
     use among_us_server::outgoing_websocket_messages::OutgoingWebsocketMessage;
+    use awc::BoxedSocket;
     use std::string::String;
     use std::time::Duration;
 
@@ -527,5 +513,25 @@ mod test_fixtures {
             }
             _ => return None,
         }
+    }
+    pub async fn assert_connection_recieves_message(
+        connection: &mut Framed<BoxedSocket, Codec>,
+        desired_message: OutgoingWebsocketMessage,
+    ) -> () {
+        while let Some(message) =
+            get_websocket_frame_data(connection.next().await.unwrap().unwrap())
+        {
+            if message == desired_message {
+                return;
+            }
+        }
+        assert!(
+            false,
+            "{}",
+            format!(
+                "Unable to find desired message in connection: {:#?}",
+                desired_message
+            )
+        )
     }
 }

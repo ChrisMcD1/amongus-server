@@ -2,7 +2,7 @@ use actix::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 #[rtype(result = "()")]
 pub enum OutgoingWebsocketMessage {
@@ -18,20 +18,20 @@ pub enum OutgoingWebsocketMessage {
     GameOver(Winner),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Winner {
     Imposters,
     Crewmates,
 }
 
-#[derive(Message, Debug, Clone, Serialize, Deserialize)]
+#[derive(Message, PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct VotingResults {
     pub ejected_player: Option<Uuid>,
 }
 
-#[derive(Message, Debug, Clone, Serialize, Deserialize)]
+#[derive(Message, PartialEq, Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct BodyReported {
@@ -39,7 +39,7 @@ pub struct BodyReported {
     pub initiator: Uuid,
 }
 
-#[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct ForwardedOutgoingWebsocketMessage {
@@ -47,21 +47,21 @@ pub struct ForwardedOutgoingWebsocketMessage {
     pub msg: OutgoingWebsocketMessage,
 }
 
-#[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct PlayerDied {
     pub killer: Uuid,
 }
 
-#[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct ChatMessage {
     pub contents: String,
 }
 
-#[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct PlayerStatus {
@@ -70,7 +70,7 @@ pub struct PlayerStatus {
     pub status: PlayerConnectionStatus,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum PlayerConnectionStatus {
     New,
@@ -78,21 +78,21 @@ pub enum PlayerConnectionStatus {
     Reconnected,
 }
 
-#[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct GameState {
     pub state: GameStateEnum,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum GameStateEnum {
     Lobby,
     InGame,
 }
 
-#[derive(Message, Debug, Serialize, Deserialize, Clone)]
+#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct SetRole {
