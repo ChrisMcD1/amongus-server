@@ -16,9 +16,11 @@ export default function App() {
 
     return (
         <Router>
-            <Routes> <Route path='/lobby' element={<Lobby username={username} />} />
-                <Route path='/' element={<Home sendName={handleChangeName} />} />
-                <Route path='/crewmate' element={<Crewmate />} /></Routes>
+            <Routes>
+                <Route path='/lobby' element={<Lobby username={username} />} />
+                <Route path='/' element={<Home username={username} sendName={handleChangeName} />} />
+                <Route path='/crewmate' element={<Crewmate />} />
+            </Routes>
         </Router>
     );
 }
