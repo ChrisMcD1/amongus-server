@@ -164,20 +164,10 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
     let _ = server.post("/start-game").send().await;
 
     let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
-    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-    let _second_crewmate_join = crewmate_connection.next().await;
-    let _crewmate_role_assign = crewmate_connection.next().await;
-    let _crewmate_game_start = crewmate_connection.next().await;
-    let _imposter_join = imposter_connection.next().await;
-    let _imposter_role_assign = imposter_connection.next().await;
-    let _second_crewmate_join = imposter_connection.next().await;
-    let _imposter_game_start = imposter_connection.next().await;
-    let second_crewmate_join = second_crewmate_connection.next().await.unwrap().unwrap();
-    let _second_crewmate_role_assign = second_crewmate_connection.next().await;
-    let _second_crewmate_game_start = second_crewmate_connection.next().await;
+    let _imposter_join = crewmate_connection.next().await.unwrap().unwrap();
+    let second_crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
 
     let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
-    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
     let second_crewmate_join =
         test_fixtures::get_websocket_frame_data(second_crewmate_join).unwrap();
 
@@ -242,11 +232,6 @@ async fn imposter_kills_sucessfully_and_ends_game() {
 
     let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
     let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-    let _crewmate_role_assign = crewmate_connection.next().await;
-    let _crewmate_game_start = crewmate_connection.next().await;
-    let _imposter_join = imposter_connection.next().await;
-    let _imposter_role_assign = imposter_connection.next().await;
-    let _imposter_game_start = imposter_connection.next().await;
 
     let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
     let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
