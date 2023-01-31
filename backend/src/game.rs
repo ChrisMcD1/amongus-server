@@ -253,7 +253,7 @@ impl Handler<IncomingMessageInternal> for Game {
 
 impl Handler<GetPlayerColor> for Game {
     type Result = String;
-    fn handle(&mut self, msg: GetPlayerColor, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: GetPlayerColor, _ctx: &mut Self::Context) -> Self::Result {
         self.players.get(&msg.id).unwrap().borrow().color.clone()
     }
 }

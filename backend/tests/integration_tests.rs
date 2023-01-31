@@ -1,6 +1,7 @@
 use actix::Actor;
 use actix_web::web::Data;
 use actix_web::{http::header::ContentType, test, App};
+use among_us_server::config_app;
 use among_us_server::game::Game;
 use among_us_server::incoming_websocket_messages::*;
 use among_us_server::outgoing_websocket_messages::*;
@@ -409,16 +410,7 @@ mod test_fixtures {
             kill_cooldown: Duration::from_secs(0),
         };
         let game = Game::new(settings, 0).start();
-        test::init_service(
-            App::new()
-                .service(hello_world)
-                .service(join_game)
-                .service(start_game)
-                .service(start_meeting)
-                .service(get_player_color)
-                .app_data(Data::new(game.clone())),
-        )
-        .await
+        test::init_service(App::new().configure(config_app(game.clone()))).await
     }
 
     pub fn get_test_server() -> actix_test::TestServer {
@@ -426,15 +418,7 @@ mod test_fixtures {
             kill_cooldown: Duration::from_secs(0),
         };
         let game = Game::new(settings, 0).start();
-        actix_test::start(move || {
-            App::new()
-                .service(hello_world)
-                .service(join_game)
-                .service(start_game)
-                .service(start_meeting)
-                .service(get_player_color)
-                .app_data(Data::new(game.clone()))
-        })
+        actix_test::start(move || App::new().configure(config_app(game.clone())))
     }
 
     pub fn get_websocket_frame_data(frame: Frame) -> Option<OutgoingWebsocketMessage> {
