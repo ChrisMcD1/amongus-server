@@ -76,6 +76,7 @@ pub enum PlayerConnectionStatus {
     New,
     Disconnected,
     Reconnected,
+    Existing,
 }
 
 #[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]

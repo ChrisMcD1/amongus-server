@@ -286,7 +286,8 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
 
     let _ = server.post("/start-game").send().await;
 
-    let imposter_join = imposter_connection.next().await.unwrap().unwrap();
+    let _crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
+    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
 
     let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
 

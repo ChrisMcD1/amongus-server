@@ -5,6 +5,7 @@ use crate::player::*;
 use actix::prelude::*;
 use rand::prelude::*;
 use rand_pcg::Pcg32;
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
@@ -302,6 +303,19 @@ impl Handler<RegisterPlayerWebsocket> for Game {
             .borrow_mut()
             .set_websocket_address(msg.websocket);
         let player = self.players.get(&msg.id).unwrap().borrow();
+        self.players
+            .iter()
+            .filter(|existing_player| existing_player.1.borrow().id != player.borrow().id)
+            .for_each(|existing_player| {
+                let existing_player = existing_player.1.borrow();
+                player
+                    .borrow()
+                    .send_outgoing_message(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                        username: existing_player.name.clone(),
+                        id: existing_player.id,
+                        status: PlayerConnectionStatus::Existing,
+                    }))
+            });
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: player.name.clone(),
             id: player.id,
