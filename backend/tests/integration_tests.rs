@@ -331,82 +331,60 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
 }
 
 #[test]
-#[ignore]
 async fn player_changes_color() {
-    //    let server = test_fixtures::get_test_server();
-    //
-    //    let (_resp, mut connection) = Client::new()
-    //        .ws(server.url("/join-game?username=Chris"))
-    //        .connect()
-    //        .await
-    //        .unwrap();
-    //
-    //    let join_message_frame = connection.next().await.unwrap().unwrap();
-    //    let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
-    //
-    //    let player_id = match join_message {
-    //        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-    //        _ => unreachable!(),
-    //    };
-    //
-    //    let route = format!("/get-player-color?id={player_id}");
-    //    println!("the route is {route}");
-    //    let return_body = server
-    //        .get(route)
-    //        .send()
-    //        .await
-    //        .unwrap()
-    //        .body()
-    //        .await
-    //        .unwrap()
-    //        .to_vec();
-    //    //    println!("return body is {return_body}");
-    //
-    //    let color_from_server = String::from_utf8(
-    //        server
-    //            .get(route)
-    //            .send()
-    //            .await
-    //            .unwrap()
-    //            .body()
-    //            .await
-    //            .unwrap()
-    //            .to_vec(),
-    //    )
-    //    .unwrap();
-    //
-    //    assert_eq!(color_from_server, "#FFFFFF".to_string());
+    let server = test_fixtures::get_test_server();
 
-    //    let color = "#ABABAB".to_string();
-    //
-    //    connection
-    //        .send(awc::ws::Message::Text(
-    //            serde_json::to_string(&IncomingWebsocketMessage::ChooseColor(ChooseColor {
-    //                color: color.clone(),
-    //            }))
-    //            .unwrap()
-    //            .into(),
-    //        ))
-    //        .await
-    //        .unwrap();
-    //
-    //    let route = format!("/get-player-color?id={player_id}");
-    //    println!("the route is {route}");
-    //
-    //    let color_from_server = String::from_utf8(
-    //        server
-    //            .get(route)
-    //            .send()
-    //            .await
-    //            .unwrap()
-    //            .body()
-    //            .await
-    //            .unwrap()
-    //            .to_vec(),
-    //    )
-    //    .unwrap();
-    //
-    //    assert_eq!(color_from_server, color);
+    let (_resp, mut connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let join_message_frame = connection.next().await.unwrap().unwrap();
+    let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
+
+    let player_id = match join_message {
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        _ => unreachable!(),
+    };
+
+    let route = format!("get-player-color?id={player_id}");
+    println!("the route is {route}");
+
+    let mut response = server.get(route.clone()).send().await.unwrap();
+    println!("got response: {:?}", response);
+
+    let color_from_server = String::from_utf8(response.body().await.unwrap().to_vec()).unwrap();
+
+    assert_eq!(color_from_server, "#FFFFFF".to_string());
+
+    let color = "#ABABAB".to_string();
+
+    connection
+        .send(awc::ws::Message::Text(
+            serde_json::to_string(&IncomingWebsocketMessage::ChooseColor(ChooseColor {
+                color: color.clone(),
+            }))
+            .unwrap()
+            .into(),
+        ))
+        .await
+        .unwrap();
+
+    let color_from_server = String::from_utf8(
+        server
+            .get(route)
+            .send()
+            .await
+            .unwrap()
+            .body()
+            .await
+            .unwrap()
+            .to_vec(),
+    )
+    .unwrap();
+
+    assert_eq!(color_from_server, color);
 }
 
 mod test_fixtures {
@@ -434,6 +412,7 @@ mod test_fixtures {
                 .service(join_game)
                 .service(start_game)
                 .service(start_meeting)
+                .service(get_player_color)
                 .app_data(Data::new(game.clone())),
         )
         .await
@@ -447,6 +426,7 @@ mod test_fixtures {
                 .service(join_game)
                 .service(start_game)
                 .service(start_meeting)
+                .service(get_player_color)
                 .app_data(Data::new(game.clone()))
         })
     }

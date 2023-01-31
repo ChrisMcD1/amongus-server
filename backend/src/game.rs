@@ -283,6 +283,7 @@ impl Handler<RegisterPlayer> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayer, _ctx: &mut Self::Context) -> Self::Result {
         let player = Player::new(&msg.name, msg.id);
+        println!("Created player {:#?}", player);
         self.players.insert(msg.id, RefCell::new(player));
     }
 }
