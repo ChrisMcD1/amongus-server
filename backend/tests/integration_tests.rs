@@ -395,6 +395,7 @@ mod test_fixtures {
     use actix_web::body::BoxBody;
     use actix_web::dev::{Service, ServiceResponse};
     use actix_web::error::Error;
+    use among_us_server::game::GameSettings;
     use among_us_server::outgoing_websocket_messages::OutgoingWebsocketMessage;
     use awc::BoxedSocket;
     use std::string::String;
@@ -404,7 +405,10 @@ mod test_fixtures {
 
     pub async fn get_test_service(
     ) -> impl Service<Request, Response = ServiceResponse<BoxBody>, Error = Error> {
-        let game = Game::new(Duration::from_secs(0), 0).start();
+        let settings = GameSettings {
+            kill_cooldown: Duration::from_secs(0),
+        };
+        let game = Game::new(settings, 0).start();
         test::init_service(
             App::new()
                 .service(hello_world)
@@ -418,7 +422,10 @@ mod test_fixtures {
     }
 
     pub fn get_test_server() -> actix_test::TestServer {
-        let game = Game::new(Duration::from_secs(0), 0).start();
+        let settings = GameSettings {
+            kill_cooldown: Duration::from_secs(0),
+        };
+        let game = Game::new(settings, 0).start();
         actix_test::start(move || {
             App::new()
                 .service(hello_world)

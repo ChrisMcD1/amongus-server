@@ -22,17 +22,22 @@ pub struct Game {
     meeting: Option<Meeting>,
 }
 
+#[derive(Debug)]
+pub struct GameSettings {
+    pub kill_cooldown: Duration,
+}
+
 impl Game {
     fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
         self.players
             .iter()
             .for_each(|player| player.1.borrow().send_outgoing_message(msg.clone()))
     }
-    pub fn new(kill_cooldown: Duration, seed: u64) -> Self {
+    pub fn new(settings: GameSettings, seed: u64) -> Self {
         Game {
             state: GameStateEnum::Lobby,
             players: BTreeMap::new(),
-            kill_cooldown,
+            kill_cooldown: settings.kill_cooldown,
             rng: Pcg32::seed_from_u64(seed),
             meeting: None,
         }
