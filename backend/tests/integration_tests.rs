@@ -57,25 +57,16 @@ async fn one_player_assigned_imposter() {
 
     let _player_join = connection.next().await;
 
-    let role_assigned_frame = connection.next().await.unwrap().unwrap();
-    let game_started_frame = connection.next().await.unwrap().unwrap();
+    let game_started = OutgoingWebsocketMessage::GameState(GameState {
+        state: GameStateEnum::InGame,
+    });
 
-    let game_started = test_fixtures::get_websocket_frame_data(game_started_frame).unwrap();
-    let role_assigned = test_fixtures::get_websocket_frame_data(role_assigned_frame).unwrap();
+    let assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
+        role: RoleAssignment::Imposter,
+    });
 
-    match game_started {
-        OutgoingWebsocketMessage::GameState(game_state) => {
-            assert_eq!(game_state.state, GameStateEnum::InGame);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
-
-    match role_assigned {
-        OutgoingWebsocketMessage::PlayerRole(player_role) => {
-            assert_eq!(player_role.role, RoleAssignment::Imposter);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
+    assert_connection_recieves_message(&mut connection, assigned_imposter).await;
+    assert_connection_recieves_message(&mut connection, game_started).await;
 }
 
 #[test]
@@ -101,27 +92,16 @@ async fn one_player_each_role() {
 
     let _kate_join = kate_connection.next().await;
 
-    let chris_role_assigned_frame = chris_connection.next().await.unwrap().unwrap();
-    let kate_role_assigned_frame = kate_connection.next().await.unwrap().unwrap();
+    let chris_assigned_crewmate = OutgoingWebsocketMessage::PlayerRole(SetRole {
+        role: RoleAssignment::Crewmate,
+    });
 
-    let chris_role_assigned =
-        test_fixtures::get_websocket_frame_data(chris_role_assigned_frame).unwrap();
-    let kate_role_assigned =
-        test_fixtures::get_websocket_frame_data(kate_role_assigned_frame).unwrap();
+    let kate_assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
+        role: RoleAssignment::Imposter,
+    });
 
-    match chris_role_assigned {
-        OutgoingWebsocketMessage::PlayerRole(player_role) => {
-            assert_eq!(player_role.role, RoleAssignment::Crewmate);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
-
-    match kate_role_assigned {
-        OutgoingWebsocketMessage::PlayerRole(player_role) => {
-            assert_eq!(player_role.role, RoleAssignment::Imposter);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
+    assert_connection_recieves_message(&mut chris_connection, chris_assigned_crewmate).await;
+    assert_connection_recieves_message(&mut kate_connection, kate_assigned_imposter).await;
 }
 
 #[test]
@@ -143,19 +123,20 @@ async fn other_player_receives_disconnect() {
     kate_connection.close().await.unwrap();
 
     let _chris_join = chris_connection.next().await;
-    let _kate_join = chris_connection.next().await;
+    let kate_join_frame = chris_connection.next().await.unwrap().unwrap();
+    let kate_join = test_fixtures::get_websocket_frame_data(kate_join_frame).unwrap();
 
-    let kate_disconnect_frame = chris_connection.next().await.unwrap().unwrap();
+    let kate_id = match kate_join {
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        _ => unreachable!(),
+    };
 
-    let kate_disconnect = test_fixtures::get_websocket_frame_data(kate_disconnect_frame).unwrap();
-
-    match kate_disconnect {
-        OutgoingWebsocketMessage::PlayerStatus(player_status) => {
-            assert_eq!(player_status.username, "Kate");
-            assert_eq!(player_status.status, PlayerConnectionStatus::Disconnected);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
+    let kate_disconnect = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+        username: "Kate".to_string(),
+        id: kate_id,
+        status: PlayerConnectionStatus::Disconnected,
+    });
+    assert_connection_recieves_message(&mut chris_connection, kate_disconnect).await;
 }
 
 #[test]
@@ -191,14 +172,21 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
     let _imposter_role_assign = imposter_connection.next().await;
     let _second_crewmate_join = imposter_connection.next().await;
     let _imposter_game_start = imposter_connection.next().await;
-    let _second_crewmate_join = second_crewmate_connection.next().await;
+    let second_crewmate_join = second_crewmate_connection.next().await.unwrap().unwrap();
     let _second_crewmate_role_assign = second_crewmate_connection.next().await;
     let _second_crewmate_game_start = second_crewmate_connection.next().await;
 
     let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
     let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
+    let second_crewmate_join =
+        test_fixtures::get_websocket_frame_data(second_crewmate_join).unwrap();
 
     let crewmate_id = match crewmate_join {
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        _ => unreachable!(),
+    };
+
+    let second_crewmate_id = match second_crewmate_join {
         OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
         _ => unreachable!(),
     };
@@ -225,15 +213,13 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
         .await
         .unwrap();
 
-    let meeting_began_frame = second_crewmate_connection.next().await.unwrap().unwrap();
-    let meeting_began = test_fixtures::get_websocket_frame_data(meeting_began_frame).unwrap();
+    let body_reported_message = OutgoingWebsocketMessage::BodyReported(BodyReported {
+        corpse: crewmate_id,
+        initiator: second_crewmate_id,
+    });
 
-    match meeting_began {
-        OutgoingWebsocketMessage::BodyReported(body_reported) => {
-            assert_eq!(body_reported.corpse, crewmate_id);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
+    assert_connection_recieves_message(&mut second_crewmate_connection, body_reported_message)
+        .await;
 }
 
 #[test]
@@ -286,39 +272,16 @@ async fn imposter_kills_sucessfully_and_ends_game() {
         .await
         .unwrap();
 
-    let imposter_success_frame = imposter_connection.next().await.unwrap().unwrap();
-    let crewmate_death_frame = crewmate_connection.next().await.unwrap().unwrap();
+    let imposter_successful_kill = OutgoingWebsocketMessage::SuccessfulKill();
+    assert_connection_recieves_message(&mut imposter_connection, imposter_successful_kill).await;
 
-    let imposter_success = test_fixtures::get_websocket_frame_data(imposter_success_frame).unwrap();
-    let crewmate_death = test_fixtures::get_websocket_frame_data(crewmate_death_frame).unwrap();
+    let crewmate_death = OutgoingWebsocketMessage::PlayerDied(PlayerDied {
+        killer: imposter_id,
+    });
+    assert_connection_recieves_message(&mut crewmate_connection, crewmate_death).await;
 
-    match imposter_success {
-        OutgoingWebsocketMessage::SuccessfulKill() => {
-            assert!(true, "We did it bois");
-        }
-        _ => assert!(
-            false,
-            "{}",
-            format!("Parsed to wrong thing: {:?}", imposter_success)
-        ),
-    }
-
-    match crewmate_death {
-        OutgoingWebsocketMessage::PlayerDied(player_died) => {
-            assert_eq!(player_died.killer, imposter_id);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
-
-    let imposters_won_frame = imposter_connection.next().await.unwrap().unwrap();
-    let imposter_won = test_fixtures::get_websocket_frame_data(imposters_won_frame).unwrap();
-
-    match imposter_won {
-        OutgoingWebsocketMessage::GameOver(winner) => {
-            assert_eq!(winner, Winner::Imposters);
-        }
-        _ => assert!(false, "Parsed to wrong thing"),
-    }
+    let imposters_won = OutgoingWebsocketMessage::GameOver(Winner::Imposters);
+    assert_connection_recieves_message(&mut imposter_connection, imposters_won).await;
 }
 
 #[test]
