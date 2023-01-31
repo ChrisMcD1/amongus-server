@@ -389,7 +389,6 @@ async fn player_changes_color() {
 
 mod test_fixtures {
     use actix_codec::Framed;
-    use actix_http::h1::ClientCodec;
     use actix_http::ws::{Codec, Frame};
     use actix_http::Request;
     use actix_test;
