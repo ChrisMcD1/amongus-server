@@ -29,6 +29,7 @@ pub async fn join_game(
     params: Query<JoinGameParams>,
     game: Data<Addr<Game>>,
 ) -> impl Responder {
+    println!("User made request: {:#?}", req);
     let game_has_started = game.send(HasGameStarted {}).await.unwrap();
     if game_has_started {
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
