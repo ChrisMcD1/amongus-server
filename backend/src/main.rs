@@ -14,7 +14,7 @@ async fn main() -> std::io::Result<()> {
     };
     let game = Game::new(game_settings, rng.gen()).start();
     HttpServer::new(move || App::new().configure(config_app(game.clone())))
-        .bind("127.0.0.1:8080")?
+        .bind("127.0.0.1:9090")?
         .run()
         .await
 }
