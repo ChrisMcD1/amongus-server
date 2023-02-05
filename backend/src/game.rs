@@ -262,16 +262,21 @@ impl Handler<GetPlayerColor> for Game {
 impl Handler<PlayerDisconnected> for Game {
     type Result = ();
     fn handle(&mut self, msg: PlayerDisconnected, _ctx: &mut Self::Context) -> Self::Result {
-        let player = self
-            .players
-            .remove(&msg.id)
-            .expect("Cannot remove player that doesn't exist");
-        let player = player.borrow();
-        self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            username: player.name.clone(),
-            id: msg.id,
-            status: PlayerConnectionStatus::Disconnected,
-        }));
+        match self.players.remove(&msg.id) {
+            Some(player) => {
+                let player = player.borrow();
+                self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
+                    PlayerStatus {
+                        username: player.name.clone(),
+                        id: msg.id,
+                        status: PlayerConnectionStatus::Disconnected,
+                    },
+                ));
+            }
+            None => {
+                println!("Tried to remove player with id {:?}, but they had already been removed somewhere else", msg.id);
+            }
+        }
     }
 }
 
@@ -345,6 +350,13 @@ impl Handler<ResetGame> for Game {
 impl Handler<StartGame> for Game {
     type Result = ();
     fn handle(&mut self, _msg: StartGame, _ctx: &mut Self::Context) -> Self::Result {
+        if self.state != GameStateEnum::Lobby {
+            println!(
+                "Unable to start game for game that is not in lobby state.
+                     This game is in state {:?}",
+                self.state
+            );
+        }
         self.state = GameStateEnum::InGame;
         let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);

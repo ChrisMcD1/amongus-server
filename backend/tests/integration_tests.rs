@@ -1,4 +1,5 @@
 use actix::Actor;
+use actix_test::TestServer;
 use actix_web::{http::header::ContentType, test, App};
 use among_us_server::config_app;
 use among_us_server::game::Game;
@@ -385,6 +386,22 @@ async fn player_changes_color() {
     .unwrap();
 
     assert_eq!(color_from_server, color);
+}
+
+#[test]
+#[ignore]
+async fn reset_game_works_basic() {
+    let server: TestServer = test_fixtures::get_test_server();
+    let (_resp, mut chris_connection) = Client::new()
+        .ws(server.url("/join-game?username=Chris"))
+        .connect()
+        .await
+        .unwrap();
+
+    let _ = server.post("/reset-game").send().await;
+    let websocket_connected = chris_connection.is_write_ready();
+
+    assert_eq!(websocket_connected, false);
 }
 
 mod test_fixtures {

@@ -89,5 +89,5 @@ pub async fn reset_game(
     game: Data<Addr<Game>>,
 ) -> impl Responder {
     game.do_send(ResetGame {});
-    "Game Started"
+    "Resetting game state and disconnecting all players!"
 }
