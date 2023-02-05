@@ -331,6 +331,17 @@ impl Handler<GetNextUUID> for Game {
     }
 }
 
+impl Handler<ResetGame> for Game {
+    type Result = ();
+    fn handle(&mut self, _msg: ResetGame, _ctx: &mut Self::Context) -> Self::Result {
+        self.state = GameStateEnum::Lobby;
+        for (_, player) in self.players.iter() {
+            player.borrow_mut().close_websocket();
+        }
+        self.players.clear();
+    }
+}
+
 impl Handler<StartGame> for Game {
     type Result = ();
     fn handle(&mut self, _msg: StartGame, _ctx: &mut Self::Context) -> Self::Result {

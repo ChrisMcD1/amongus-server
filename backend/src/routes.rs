@@ -81,3 +81,13 @@ pub async fn get_player_color(
     let color = game.send(GetPlayerColor { id: params.id }).await.unwrap();
     color
 }
+
+#[post("/reset-game")]
+pub async fn reset_game(
+    _req: HttpRequest,
+    _stream: Payload,
+    game: Data<Addr<Game>>,
+) -> impl Responder {
+    game.do_send(ResetGame {});
+    "Game Started"
+}
