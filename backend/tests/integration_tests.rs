@@ -389,7 +389,6 @@ async fn player_changes_color() {
 }
 
 #[test]
-#[ignore]
 async fn reset_game_works_basic() {
     let server: TestServer = test_fixtures::get_test_server();
     let (_resp, mut chris_connection) = Client::new()
@@ -399,9 +398,14 @@ async fn reset_game_works_basic() {
         .unwrap();
 
     let _ = server.post("/reset-game").send().await;
-    let websocket_connected = chris_connection.is_write_ready();
 
-    assert_eq!(websocket_connected, false);
+    let _join = chris_connection.next().await;
+
+    let no_message = chris_connection.next().await;
+
+    let websocket_disconnected = no_message.is_none();
+
+    assert_eq!(websocket_disconnected, true);
 }
 
 mod test_fixtures {
