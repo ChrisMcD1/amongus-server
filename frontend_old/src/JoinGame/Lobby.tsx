@@ -1,6 +1,8 @@
-import { useState } from "react";
-import whiteTest from './Whitetest.svg';
-import { BlockPicker, ColorResult } from 'react-color';
+import React, { useState } from "react";
+import { ReactComponent as White } from './Whitetest.svg';
+import { BlockPicker, ColorChangeHandler, ColorResult } from 'react-color';
+//@ts-ignore
+import { LightenDarkenColor } from 'lighten-darken-color';
 import start from "./start.png"
 
 type LobbyProps = { username: string }
@@ -12,7 +14,7 @@ export default function Lobby(props: LobbyProps) {
     const handleChange = (color: ColorResult) => {
         setBackground(color.hex);
         document.documentElement.style.setProperty('--base-color', color.hex);
-        document.documentElement.style.setProperty('--shadow-color', color.hex);
+        document.documentElement.style.setProperty('--shadow-color', LightenDarkenColor(color.hex, -35));
     }
 
     const myFunction = () => {
@@ -23,7 +25,7 @@ export default function Lobby(props: LobbyProps) {
         <div className='lobby-background'>
             <div className='player-box center'>
                 <h3 className='player-text'>{props.username}</h3>
-                <img src={whiteTest} className="player" onClick={() => setCheck(!check)} />
+                <White className="player" onClick={() => setCheck(!check)} />
                 <button style={{ display: check ? "none" : "initial" }}
                     className="start-button">
                     <img src={start} onClick={myFunction} />

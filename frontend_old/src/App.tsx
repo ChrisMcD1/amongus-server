@@ -1,3 +1,4 @@
+import React from "react";
 import Lobby from './JoinGame/Lobby';
 import Home from './JoinGame/Home';
 import Crewmate from './InGame/Crewmate'

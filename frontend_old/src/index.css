@@ -1,0 +1,141 @@
+:root {
+  --base-color: #FF0000;
+  --shadow-color: #B90E0A;
+}
+
+@font-face {
+    font-family: 'Among Us';
+    src: url("./Assets/Fonts/Impostograph-Regular.otf");
+    }
+@font-face {
+    font-family: 'Among You';
+    src: url("./Assets/Fonts/Inyourfacejoffrey.ttf");
+    }
+@font-face {
+      font-family: 'Cyber';
+      src: url("./Assets/Fonts/VCR_OSD_MONO_1.001.ttf");
+      }
+.background {
+        background-image: url('./Assets/Pictures/amongusbackground2.jpg');
+        background-position: top center;
+        background-attachment: fixed;
+        background-size: cover;
+        background-repeat: no-repeat;
+        width: 100vw;
+        height: 100vh;
+    }
+.lobby-background {
+  background-image: url('./Assets/Pictures/amonguslobby.jpg');
+        background-position: top center;
+        background-attachment: fixed;
+        background-size: cover;
+        background-repeat: no-repeat;
+        width: 100vw;
+        height: 100vh;
+}
+body {
+    padding: 0%;
+    margin: 0;
+}
+.joinButton {
+    background-color: Transparent;
+    background-repeat:no-repeat;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 5px;
+    outline: 0;
+    text-transform: uppercase;
+    margin: 10px 0px;
+    cursor: pointer;
+    box-shadow: 0px 2px 2px gray;
+/*    height: 5em;*/
+  /*  width: 15em; */
+  }
+.center {
+    margin: 0;
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+  }
+  .among-us-join {
+    font-family: Among Us;
+    font-size: 4em;
+    color: white;
+    text-decoration: none;
+  }
+
+  .player {
+    height: 3em;
+    margin-top: 1.5em;
+  }
+
+  path.body {
+    fill: var(--base-color, #FF0000);
+    stroke: var(--base-color, #FF0000);
+    stroke-width: 4;
+  }
+
+  g {
+    fill: var(--shadow-color, #B90E0A);
+    stroke: var(--shadow-color, #B90E0A);
+  }
+
+ .colorPick {
+    top: 50%;
+ }
+
+ .user-label {
+  color: white;
+  font-family: Among You;
+  font-size: 2.5em;
+  margin-right: .5em;
+ }
+ .user-input {
+  background-color: transparent;
+  font-family: Cyber;
+  border-color: white;
+  height: 1.4em;
+  color: white;
+  vertical-align: middle;
+  font-size: 1.3em;
+ }
+
+ .flex {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  top: 40%;
+  justify-content: center;
+ }
+
+ .player-text {
+  margin: 0;
+  color: white;
+  font-family: Cyber;
+  position: absolute;
+ }
+
+ .player-box {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  position: absolute;
+ }
+
+ .start-button {
+  display: flex;
+  background-color: transparent;
+  border-color: transparent;
+  position: absolute;
+  top: 250%;
+ }
+
+ /*
+locations for spawn in
+ */
+.your-loc {
+  top: 25%;
+  left: 30%;
+}
