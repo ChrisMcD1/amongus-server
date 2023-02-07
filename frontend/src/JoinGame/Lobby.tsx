@@ -20,12 +20,12 @@ export default function Lobby(props: LobbyProps) {
     }
 
     return (
-        <div className='lobby-background'>
-            <div className='player-box center'>
-                <h3 className='player-text'>{props.username}</h3>
-                <img src={whiteTest} className="player" onClick={() => setCheck(!check)} />
+        <div className='bg-lobby bg-center h-screen w-screen bg-cover'>
+            <div className='flex flex-col justify-center'>
+                <h3 className='text-white mx-auto mt-32'>{props.username}</h3>
+                <img src={whiteTest} className="h-32 player mx-auto fill-current-[#222] border-black text-[#222]" onClick={() => setCheck(!check)} />
                 <button style={{ display: check ? "none" : "initial" }}
-                    className="start-button">
+                    className='bg-transparent mx-auto'>
                     <img src={start} onClick={myFunction} />
                 </button>
             </div>

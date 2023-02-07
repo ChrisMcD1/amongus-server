@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 type HomeProps = {
     username: string,
@@ -21,12 +20,12 @@ export default function Home(props: HomeProps) {
         navigate("/lobby");
     }
     return (
-        <div className='background flex'>
-            <button className='joinButton center among-us-join' onClick={joinGame}>
+        <div className="bg-space-stars justify-center bg-center flex flex-col h-screen w-screen bg-cover bg-no-repeat bg-fixed">
+            <button className='center mx-auto text-2xl py-5 px-10' onClick={joinGame}>
                 Join Game
             </button>
-            <div className='flex'>
-                <label className='user-label' htmlFor="name">Username:</label>
+            <div className='flex mx-auto p-10'>
+                <label className='user-label mx-5 text-2xl' htmlFor="name">Username:</label>
                 <input onChange={handleChange} className='user-input'
                     type="text" defaultValue={props.username}
                     required minLength={1} maxLength={10} size={12}></input>
