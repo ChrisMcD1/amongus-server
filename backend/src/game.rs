@@ -264,10 +264,9 @@ impl Handler<PlayerDisconnected> for Game {
     fn handle(&mut self, msg: PlayerDisconnected, _ctx: &mut Self::Context) -> Self::Result {
         match self.players.remove(&msg.id) {
             Some(player) => {
-                let player = player.borrow();
                 self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
                     PlayerStatus {
-                        username: player.name.clone(),
+                        username: player.borrow_mut().name.clone(),
                         id: msg.id,
                         status: PlayerConnectionStatus::Disconnected,
                     },
@@ -278,6 +277,11 @@ impl Handler<PlayerDisconnected> for Game {
             }
         }
     }
+}
+
+impl Handler<PlayerRejoined> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: PlayerRejoined, ctx: &mut Self::Context) -> Self::Result {}
 }
 
 impl Handler<HasGameStarted> for Game {
@@ -302,6 +306,16 @@ impl Handler<RegisterPlayer> for Game {
 impl Handler<RegisterPlayerWebsocket> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayerWebsocket, _ctx: &mut Self::Context) -> Self::Result {
+        let player_status = match self
+            .players
+            .get(&msg.id)
+            .unwrap()
+            .borrow()
+            .has_connected_previously
+        {
+            true => PlayerConnectionStatus::Reconnected,
+            false => PlayerConnectionStatus::New,
+        };
         self.players
             .get_mut(&msg.id)
             .unwrap()
@@ -324,7 +338,7 @@ impl Handler<RegisterPlayerWebsocket> for Game {
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: player.name.clone(),
             id: player.id,
-            status: PlayerConnectionStatus::New,
+            status: player_status,
         }));
     }
 }

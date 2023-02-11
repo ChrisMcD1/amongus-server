@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 type HomeProps = {
     username: string,
     sendName: (name: string) => void;
+    setWs: (ws: WebSocket) => void;
 }
 
 export default function Home(props: HomeProps) {
@@ -17,6 +18,7 @@ export default function Home(props: HomeProps) {
         ws.onmessage = (msg: any) => {
             console.log(JSON.parse(msg.data));
         }
+        props.setWs(ws);
         navigate("/lobby");
     }
     return (

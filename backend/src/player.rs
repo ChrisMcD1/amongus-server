@@ -17,6 +17,7 @@ pub struct Player {
     pub name: String,
     pub alive: bool,
     pub color: String,
+    pub has_connected_previously: bool,
     pub id: Uuid,
     pub websocket: Option<Addr<PlayerWebsocket>>,
 }
@@ -28,11 +29,12 @@ impl Player {
             name: name.to_string(),
             alive: true,
             color: "#FFFFFF".to_string(),
+            has_connected_previously: false,
             id,
             websocket: None,
         }
     }
-    pub fn close_websocket(&self) {
+    pub fn close_websocket(&mut self) {
         match &self.websocket {
             Some(websocket) => websocket.do_send(CloseWebsocket {}),
             None => {
@@ -42,9 +44,11 @@ impl Player {
                 )
             }
         }
+        self.websocket = None;
     }
     pub fn set_websocket_address(&mut self, websocket: Addr<PlayerWebsocket>) {
         self.websocket = Some(websocket);
+        self.has_connected_previously = true;
     }
     pub fn send_outgoing_message(&self, msg: OutgoingWebsocketMessage) {
         match &self.websocket {

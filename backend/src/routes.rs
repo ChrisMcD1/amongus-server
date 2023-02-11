@@ -2,6 +2,7 @@ use crate::game::*;
 use crate::internal_messages::*;
 use crate::player::PlayerWebsocket;
 use actix::prelude::*;
+use actix_web::cookie::Cookie;
 use actix_web::post;
 use actix_web::{
     error, get,
@@ -35,6 +36,7 @@ pub async fn join_game(
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
     }
     let player_id = game.send(GetNextUUID {}).await.unwrap();
+    let cookie = Cookie::new("player_id", player_id.clone().to_string());
 
     game.do_send(RegisterPlayer {
         name: params.username.clone(),
@@ -42,9 +44,25 @@ pub async fn join_game(
     });
 
     let player_websocket = PlayerWebsocket::new(*player_id, game.get_ref().clone());
-    let player_websocket_active = ws::start(player_websocket, &req, stream).unwrap();
+    let mut player_websocket_active = ws::start(player_websocket, &req, stream).unwrap();
+    player_websocket_active.add_cookie(&cookie).unwrap();
 
     player_websocket_active
+}
+
+#[derive(Deserialize)]
+pub struct PlayerRejoinParams {
+    id: Uuid,
+}
+#[get("/player-rejoin")]
+pub async fn player_rejoin(
+    _req: HttpRequest,
+    _stream: Payload,
+    params: Query<PlayerRejoinParams>,
+    game: Data<Addr<Game>>,
+) -> impl Responder {
+    game.do_send(PlayerRejoined { id: params.id });
+    "hi existing playr"
 }
 
 #[post("/start-game")]

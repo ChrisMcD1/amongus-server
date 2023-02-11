@@ -19,6 +19,12 @@ pub struct PlayerDisconnected {
 
 #[derive(Message)]
 #[rtype(result = "()")]
+pub struct PlayerRejoined {
+    pub id: Uuid,
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
 pub struct RegisterPlayer {
     pub id: Uuid,
     pub name: String,
