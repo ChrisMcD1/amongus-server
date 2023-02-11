@@ -339,6 +339,13 @@ impl Handler<RegisterPlayerWebsocket> for Game {
     }
 }
 
+impl Handler<PlayerExists> for Game {
+    type Result = bool;
+    fn handle(&mut self, msg: PlayerExists, _ctx: &mut Self::Context) -> Self::Result {
+        self.players.get(&msg.id).is_some()
+    }
+}
+
 impl Handler<GetNextUUID> for Game {
     type Result = Arc<Uuid>;
     fn handle(&mut self, _msg: GetNextUUID, _ctx: &mut Self::Context) -> Self::Result {

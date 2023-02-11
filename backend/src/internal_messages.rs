@@ -64,6 +64,12 @@ pub struct StartMeeting {}
 pub struct GetNextUUID {}
 
 #[derive(Message)]
+#[rtype(result = "bool")]
+pub struct PlayerExists {
+    pub id: Uuid,
+}
+
+#[derive(Message)]
 #[rtype(result = "String")]
 pub struct GetPlayerColor {
     pub id: Uuid,

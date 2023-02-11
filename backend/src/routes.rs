@@ -62,6 +62,13 @@ pub async fn player_rejoin(
     params: Query<PlayerRejoinParams>,
     game: Data<Addr<Game>>,
 ) -> impl Responder {
+    let player_exists = game.send(PlayerExists { id: params.id }).await.unwrap();
+    if !player_exists {
+        return error::ErrorBadRequest(
+            "This player cannot rejoin because they are not a part of this game",
+        )
+        .into();
+    }
     let player_websocket = PlayerWebsocket::new(params.id, game.get_ref().clone());
     ws::start(player_websocket, &req, stream).unwrap()
 }
