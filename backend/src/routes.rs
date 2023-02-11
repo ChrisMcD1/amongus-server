@@ -54,15 +54,16 @@ pub async fn join_game(
 pub struct PlayerRejoinParams {
     id: Uuid,
 }
+
 #[get("/player-rejoin")]
 pub async fn player_rejoin(
-    _req: HttpRequest,
-    _stream: Payload,
+    req: HttpRequest,
+    stream: Payload,
     params: Query<PlayerRejoinParams>,
     game: Data<Addr<Game>>,
 ) -> impl Responder {
-    game.do_send(PlayerRejoined { id: params.id });
-    "hi existing playr"
+    let player_websocket = PlayerWebsocket::new(params.id, game.get_ref().clone());
+    ws::start(player_websocket, &req, stream).unwrap()
 }
 
 #[post("/start-game")]

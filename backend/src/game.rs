@@ -279,11 +279,6 @@ impl Handler<PlayerDisconnected> for Game {
     }
 }
 
-impl Handler<PlayerRejoined> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: PlayerRejoined, ctx: &mut Self::Context) -> Self::Result {}
-}
-
 impl Handler<HasGameStarted> for Game {
     type Result = bool;
     fn handle(&mut self, _msg: HasGameStarted, _ctx: &mut Self::Context) -> Self::Result {
