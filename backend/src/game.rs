@@ -262,7 +262,7 @@ impl Handler<GetPlayerColor> for Game {
 impl Handler<PlayerDisconnected> for Game {
     type Result = ();
     fn handle(&mut self, msg: PlayerDisconnected, _ctx: &mut Self::Context) -> Self::Result {
-        match self.players.remove(&msg.id) {
+        match self.players.get(&msg.id) {
             Some(player) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
                     PlayerStatus {
@@ -271,6 +271,7 @@ impl Handler<PlayerDisconnected> for Game {
                         status: PlayerConnectionStatus::Disconnected,
                     },
                 ));
+                player.borrow_mut().close_websocket();
             }
             None => {
                 println!("Tried to remove player with id {:?}, but they had already been removed somewhere else", msg.id);
@@ -304,7 +305,7 @@ impl Handler<RegisterPlayerWebsocket> for Game {
         let player_status = match self
             .players
             .get(&msg.id)
-            .unwrap()
+            .expect("Tried to register websocket for a player that doesn't exist!")
             .borrow()
             .has_connected_previously
         {
