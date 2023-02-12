@@ -11,6 +11,11 @@ export default function Lobby(props: LobbyProps) {
 
   const navigate = useNavigate();
 
+  const amogus = {
+    fill: "#FF0000",
+    stroke: "#FF0000"
+  }
+
   const handleChange = (color: ColorResult) => {
     setBackground(color.hex);
     document.documentElement.style.setProperty("--base-color", color.hex);
@@ -25,10 +30,11 @@ export default function Lobby(props: LobbyProps) {
   return (
     <div className="h-screen w-screen items-center bg-lobby bg-cover bg-center">
       <div className="flex flex-col items-center">
-        <h3 className="mx-auto mt-32 text-white">{props.username}</h3>
+        <h3 className="mx-auto absolute font-amongus-log inset-y-1/4 text-white">{props.username}</h3>
         <img
           src={whiteTest}
-          className="player fill-current-[#222] absolute inset-1/4 mx-auto h-10 items-center border-black text-[#222] md:h-20"
+          style = {amogus}
+          className="player absolute inset-1/4 mx-auto h-12 items-center border-black text-[#222] md:h-20"
           onClick={() => setCheck(!check)}
         />
         <button
