@@ -11,9 +11,9 @@ module.exports = {
             'lobby': "url('/Pictures/amonguslobby.jpg')"
         },
         fontFamily: {
-        'amongus-title': ['Impostograph-Regular'],
-        'amongus-text' : ['Inyourfacejoffrey'],
-        'amongus-log' : ['VCR_OSD_MONO_1.001']
+        'amongus-title': ['amongus-title'],
+        'amongus-text' : ['amongus-text'],
+        'amongus-log' : ['amongus-log']
       }
     },
   },

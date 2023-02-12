@@ -1,9 +1,24 @@
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
-@import url("../public/Fonts/Impostograph-Regular.ttf");
-@import url("../public/Fonts/Inyourfacejoffrey.ttf");
-@import url("../public/Fonts/VCR_OSD_MONO_1.001.ttf");
+
+@layer base {
+    @font-face {
+        font-family: amongus-title;
+        font-weight: 400;
+        src: url("/public/Fonts/Impostograph-Regular.ttf");
+    }
+    @font-face {
+        font-family: amongus-text;
+        font-weight: 400;
+        src: url("/public/Fonts/Inyourfacejoffrey.ttf");
+    }
+    @font-face {
+        font-family: amongus-log;
+        font-weight: 400;
+        src: url("/public/Fonts/VCR_OSD_MONO_1.001.ttf");
+    }
+}
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

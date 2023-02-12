@@ -22,12 +22,12 @@ export default function Home(props: HomeProps) {
     }
     return (
         <div className="bg-space-stars justify-center bg-center flex flex-col h-screen w-screen bg-cover bg-no-repeat bg-fixed">
-            <button className='center mx-auto text-2xl py-5 px-10' onClick={joinGame}>
+            <button className='center mx-auto text-5xl py-5 px-10 font-amongus-text bg-transparent border-white' onClick={joinGame}>
                 Join Game
             </button>
             <div className='flex mx-auto p-10'>
-                <label className='user-label mx-5 text-2xl font-amongus-title' htmlFor="name">Username:</label>
-                <input onChange={handleChange} className='user-input font-amongus-log'
+                <label className='user-label mx-5 text-4xl font-amongus-title' htmlFor="name">Username:</label>
+                <input onChange={handleChange} className='user-input font-amongus-log bg-transparent border-white border rounded-lg'
                     type="text" defaultValue={props.username}
                     required minLength={1} maxLength={10} size={12}></input>
             </div>
