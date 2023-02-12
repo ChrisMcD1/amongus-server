@@ -1,23 +1,22 @@
+import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { PlayersContext } from "../App";
+import { configureWebsocket } from "../websocket";
 type HomeProps = {
     username: string,
-    sendName: (name: string) => void;
+    setUsername: (name: string) => void;
     setWs: (ws: WebSocket) => void;
 }
 
 export default function Home(props: HomeProps) {
     const handleChange = (e: any) => {
-        props.sendName(e.target.value);
+        props.setUsername(e.target.value);
     }
     const navigate = useNavigate();
+    const playerContext = useContext(PlayersContext)!;
     const joinGame = async (_e: any) => {
         let ws = new WebSocket(`ws://localhost:9090/join-game?username=${props.username}`);
-        ws.onopen = () => {
-            console.log("Websocket has opened!");
-        }
-        ws.onmessage = (msg: any) => {
-            console.log(JSON.parse(msg.data));
-        }
+        ws = configureWebsocket(ws, playerContext);
         props.setWs(ws);
         navigate("/lobby");
     }

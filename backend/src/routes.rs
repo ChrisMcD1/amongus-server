@@ -55,20 +55,25 @@ pub struct PlayerRejoinParams {
     id: Uuid,
 }
 
-#[get("/player-rejoin")]
+#[get("player-exists")]
+pub async fn player_exists(
+    _req: HttpRequest,
+    _stream: Payload,
+    params: Query<PlayerRejoinParams>,
+    game: Data<Addr<Game>>,
+) -> impl Responder {
+    let player_exists = game.send(PlayerExists { id: params.id }).await.unwrap();
+
+    player_exists.to_string()
+}
+
+#[get("/player-rejoin-game")]
 pub async fn player_rejoin(
     req: HttpRequest,
     stream: Payload,
     params: Query<PlayerRejoinParams>,
     game: Data<Addr<Game>>,
 ) -> impl Responder {
-    let player_exists = game.send(PlayerExists { id: params.id }).await.unwrap();
-    if !player_exists {
-        return error::ErrorBadRequest(
-            "This player cannot rejoin because they are not a part of this game",
-        )
-        .into();
-    }
     let player_websocket = PlayerWebsocket::new(params.id, game.get_ref().clone());
     ws::start(player_websocket, &req, stream).unwrap()
 }

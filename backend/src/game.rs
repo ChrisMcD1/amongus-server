@@ -266,7 +266,7 @@ impl Handler<PlayerDisconnected> for Game {
             Some(player) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
                     PlayerStatus {
-                        username: player.borrow_mut().name.clone(),
+                        username: player.borrow().name.clone(),
                         id: msg.id,
                         status: PlayerConnectionStatus::Disconnected,
                     },
