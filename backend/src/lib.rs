@@ -15,6 +15,8 @@ pub fn config_app(game: Addr<Game>) -> Box<dyn Fn(&mut actix_web::web::ServiceCo
         cfg.app_data(Data::new(game.clone()))
             .service(hello_world)
             .service(join_game)
+            .service(player_rejoin)
+            .service(player_exists)
             .service(start_game)
             .service(reset_game)
             .service(start_meeting)
