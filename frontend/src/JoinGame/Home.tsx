@@ -27,8 +27,8 @@ export default function Home(props: HomeProps) {
                 Join Game
             </button>
             <div className='flex mx-auto p-10'>
-                <label className='user-label mx-5 text-2xl' htmlFor="name">Username:</label>
-                <input onChange={handleChange} className='user-input'
+                <label className='user-label mx-5 text-2xl font-amongus-title' htmlFor="name">Username:</label>
+                <input onChange={handleChange} className='user-input font-amongus-log'
                     type="text" defaultValue={props.username}
                     required minLength={1} maxLength={10} size={12}></input>
             </div>
