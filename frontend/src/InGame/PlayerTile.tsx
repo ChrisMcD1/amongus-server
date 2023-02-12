@@ -1,15 +1,14 @@
 import { Player } from "./StatusOverview";
 
 export default function PlayerTile(props: Player) {
-    return (
-        <div className="m-1 border-white border-2 border-solid rounded-xl p-2 flex flex-col items-center" >
-            <div style={{ backgroundColor: props.color }} className="rounded-full h-20 w-20 mx-auto" ></div>
-            <div>
-                {props.name}
-            </div>
-            <div>
-                {props.alive ? "I'm alive" : "I'm dead"}
-            </div>
-        </div>
-    )
+  return (
+    <div className="m-1 flex flex-col items-center rounded-xl border-2 border-solid border-white p-2">
+      <div
+        style={{ backgroundColor: props.color }}
+        className="mx-auto h-20 w-20 rounded-full"
+      ></div>
+      <div>{props.name}</div>
+      <div>{props.alive ? "I'm alive" : "I'm dead"}</div>
+    </div>
+  );
 }
