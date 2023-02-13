@@ -1,9 +1,10 @@
 import { useContext } from "react";
 import { v4 as uuidV4 } from "uuid";
-import { PlayersContext } from "../App";
 import PlayerTile from "./PlayerTile";
+import { useAppDispatch, useAppSelector } from "../hooks";
 
 export type Player = {
+  role: string | null;
   color: string;
   name: string;
   alive: boolean;
@@ -13,7 +14,7 @@ export type Player = {
 type StatusOverviewProps = {};
 
 function StatusOverview(_props: StatusOverviewProps) {
-  const { players } = useContext(PlayersContext)!;
+  const { players } = useAppSelector((state) => state.players);
   return (
     <div className="flex h-screen flex-col place-content-center justify-center">
       <h1 className="mx-auto mt-0 mb-10">Game Overview</h1>

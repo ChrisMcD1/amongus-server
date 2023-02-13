@@ -268,6 +268,7 @@ impl Handler<PlayerDisconnected> for Game {
                     PlayerStatus {
                         username: player.borrow().name.clone(),
                         id: msg.id,
+                        color:player.borrow().color.clone(),
                         status: PlayerConnectionStatus::Disconnected,
                     },
                 ));
@@ -328,12 +329,14 @@ impl Handler<RegisterPlayerWebsocket> for Game {
                     .send_outgoing_message(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
                         username: existing_player.name.clone(),
                         id: existing_player.id,
+                        color: existing_player.color.clone(),
                         status: PlayerConnectionStatus::Existing,
                     }))
             });
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: player.name.clone(),
             id: player.id,
+            color: player.color.clone(),
             status: player_status,
         }));
     }

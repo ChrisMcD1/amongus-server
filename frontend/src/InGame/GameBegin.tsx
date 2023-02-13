@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+type BeginProps = { username: string };
 
-export default function GameBegin() {
+export default function GameBegin(props: BeginProps) {
   return (
     <div className="background flex h-screen items-center bg-black">
       <div className="flex h-fit">

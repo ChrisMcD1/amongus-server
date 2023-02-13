@@ -67,6 +67,7 @@ pub struct ChatMessage {
 pub struct PlayerStatus {
     pub username: String,
     pub id: Uuid,
+    pub color: String,
     pub status: PlayerConnectionStatus,
 }
 

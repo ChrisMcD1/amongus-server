@@ -2,27 +2,26 @@ import Lobby from "./JoinGame/Lobby";
 import Home from "./JoinGame/Home";
 import Crewmate from "./InGame/Crewmate";
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import StatusOverview, { Player } from "./InGame/StatusOverview";
 import Dashboard from "./InGame/Dashboard";
 import { configureWebsocket } from "./websocket";
 import React from "react";
 import GameBegin from "./InGame/GameBegin";
-
-export type PlayersContextType = {
-  ws: WebSocket | undefined;
-  players: Array<Player>;
-  setPlayers: (players: Array<Player>) => void;
-};
-
-export const PlayersContext = React.createContext<PlayersContextType | null>(
-  null
-);
+import { Provider } from "react-redux";
+import store from "./store";
+import { changeColor } from "./JoinGame/colorSlice";
+import { setUser } from "./JoinGame/userSlice";
+import Color from "color";
 
 export default function App() {
   const [username, setUsername] = useState("");
   const [ws, setWs] = useState<WebSocket>();
-  const [players, setPlayers] = useState<Array<Player>>([]);
 
   const player_id = document.cookie
     .split("; ")
@@ -39,7 +38,7 @@ export default function App() {
           let ws = new WebSocket(
             `ws://localhost:9090/player-rejoin-game?id=${player_id}`
           );
-          ws = configureWebsocket(ws, { ws, players, setPlayers });
+          ws = configureWebsocket(ws);
           console.log(ws);
           setWs(ws);
         } else {
@@ -51,9 +50,7 @@ export default function App() {
 
   return (
     <Router>
-      <PlayersContext.Provider
-        value={{ players: players, setPlayers: setPlayers, ws: ws }}
-      >
+      <Provider store={store}>
         <Routes>
           <Route path="/lobby" element={<Lobby username={username} />} />
           <Route
@@ -66,12 +63,12 @@ export default function App() {
               />
             }
           />
-          <Route path="/crewmate" element={<Crewmate />} />
-          <Route path="/begin" element={<GameBegin />} />
+          <Route path="/crewmate" element={<Crewmate username={username} />} />
+          <Route path="/begin" element={<GameBegin username={username} />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/status-overview" element={<StatusOverview />} />
         </Routes>
-      </PlayersContext.Provider>
+      </Provider>
     </Router>
   );
 }

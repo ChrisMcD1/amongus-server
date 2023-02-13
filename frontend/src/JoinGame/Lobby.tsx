@@ -1,25 +1,28 @@
 import { useState } from "react";
-import whiteTest from "./Whitetest.svg";
+import {ReactComponent as Whitetest} from "./Whitetest.svg";
 import { BlockPicker, ColorResult } from "react-color";
 import start from "./start.png";
 import { useNavigate } from "react-router-dom";
 type LobbyProps = { username: string };
+import Color from "color";
+import { useAppSelector, useAppDispatch } from '../hooks'
+import { changeColor } from './colorSlice'
+
 
 export default function Lobby(props: LobbyProps) {
   const [background, setBackground] = useState("#000000");
   const [check, setCheck] = useState(false);
 
   const navigate = useNavigate();
-
-  const amogus = {
-    fill: "#FF0000",
-    stroke: "#FF0000"
-  }
+  const dispatch = useAppDispatch();
 
   const handleChange = (color: ColorResult) => {
     setBackground(color.hex);
+    dispatch(changeColor(color.hex));
+    
+    let darkerColor = Color(color.hex).darken(0.3);
     document.documentElement.style.setProperty("--base-color", color.hex);
-    document.documentElement.style.setProperty("--shadow-color", color.hex);
+    document.documentElement.style.setProperty("--shadow-color", darkerColor.hex());
   };
 
   const startGame = () => {
@@ -30,11 +33,9 @@ export default function Lobby(props: LobbyProps) {
   return (
     <div className="h-screen w-screen items-center bg-lobby bg-cover bg-center">
       <div className="flex flex-col items-center">
-        <h3 className="mx-auto absolute font-amongus-log inset-y-1/4 text-white">{props.username}</h3>
-        <img
-          src={whiteTest}
-          style = {amogus}
-          className="player absolute inset-1/4 mx-auto h-12 items-center border-black text-[#222] md:h-20"
+        <h3 className="mx-auto absolute font-amongus-log top-[9rem] md:top-[20rem] md:text-lg text-white">{useAppSelector((state) => state.user.user)}</h3>
+        <Whitetest
+          className="player absolute inset-1/4 top-[27%] mx-auto h-12 items-center md:h-20"
           onClick={() => setCheck(!check)}
         />
         <button
