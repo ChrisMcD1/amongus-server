@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 #[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
-#[serde(tag = "type")]
+#[serde(tag = "type", content = "content")]
 #[rtype(result = "()")]
 pub enum OutgoingWebsocketMessage {
     ChatMessage(ChatMessage),
