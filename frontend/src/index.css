@@ -76,6 +76,16 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+path.body {
+  fill: var(--base-color, #FF0000);
+  stroke: var(--base-color, #FF0000);
+  stroke-width: 4;
+}
+
+g {
+  fill: var(--shadow-color, #B90E0A);
+  stroke: var(--shadow-color, #B90E0A);
+}
 
 @media (prefers-color-scheme: light) {
   :root {
