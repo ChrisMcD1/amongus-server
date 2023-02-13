@@ -257,7 +257,7 @@ async fn imposter_kills_sucessfully_and_ends_game() {
         .await
         .unwrap();
 
-    let imposter_successful_kill = OutgoingWebsocketMessage::SuccessfulKill();
+    let imposter_successful_kill = OutgoingWebsocketMessage::SuccessfulKill(());
     assert_connection_recieves_message(&mut imposter_connection, imposter_successful_kill).await;
 
     let crewmate_death = OutgoingWebsocketMessage::PlayerDied(PlayerDied {

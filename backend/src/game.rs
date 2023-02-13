@@ -201,7 +201,7 @@ impl Game {
                             Some(Role::Imposter(imposter.reset_kill_cooldown()));
                         target_player.alive = false;
                         initiating_player
-                            .send_outgoing_message(OutgoingWebsocketMessage::SuccessfulKill());
+                            .send_outgoing_message(OutgoingWebsocketMessage::SuccessfulKill(()));
                         target_player.send_outgoing_message(OutgoingWebsocketMessage::PlayerDied(
                             PlayerDied { killer: initiator },
                         ));

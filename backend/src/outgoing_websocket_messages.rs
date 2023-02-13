@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 #[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
+#[serde(tag = "type")]
 #[rtype(result = "()")]
 pub enum OutgoingWebsocketMessage {
     ChatMessage(ChatMessage),
@@ -11,7 +12,7 @@ pub enum OutgoingWebsocketMessage {
     GameState(GameState),
     PlayerRole(SetRole),
     PlayerDied(PlayerDied),
-    SuccessfulKill(),
+    SuccessfulKill(()),
     InvalidAction(String),
     BodyReported(BodyReported),
     VotingResults(VotingResults),
