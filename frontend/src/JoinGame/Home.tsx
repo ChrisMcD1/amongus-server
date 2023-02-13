@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { configureWebsocket } from "../websocket";
-import { useAppDispatch, useAppSelector } from "../hooks";
+import { useAppDispatch } from "../hooks";
 import { setUser } from "./userSlice";
 type HomeProps = {
   username: string;
