@@ -25,12 +25,10 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
     //     console.error("Got websocket message before hook was set up. BAD");
     //     return;
     // }
-    let parsed = JSON.parse(msg.data);
-    console.log(parsed);
-    let [type, contents] = Object.entries(parsed)[0];
-    switch (type) {
+    let parsed = JSON.parse(msg.data) as PreZodMessage;
+    switch (parsed.type) {
         case "PlayerStatus": {
-            let playerStatus = PlayerStatus.parse(contents);
+            let playerStatus = PlayerStatus.parse(parsed.content);
             console.log(`parsed player status to ${JSON.stringify(playerStatus)}`);
             let existingPlayer = globalPlayers?.players.find(player => player.id === playerStatus.id);
             if (existingPlayer == null) {
@@ -47,22 +45,26 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                 let color = store.getState().color.color;
                 let darkerColor = Color(color).darken(0.3);
                 document.documentElement.style.setProperty(
-                "--base-color",
-          store.getState().color.color
-        );
-        document.documentElement.style.setProperty(
-          "--shadow-color",
-          darkerColor.hex()
-        );
+                    "--base-color",
+                    store.getState().color.color
+                );
+                document.documentElement.style.setProperty(
+                    "--shadow-color",
+                    darkerColor.hex()
+                );
             }
-            
-
+            break;
         }
         default: {
-            console.warn(`Got nonconfigured message of type: ${type}, and message:`, contents);
+            console.warn(`Got nonconfigured message of type: ${parsed.type}, and message:`, parsed.content);
         }
 
     }
+}
+
+type PreZodMessage = {
+    type: "PlayerStatus"; // TODO: This string literal will grow as we add more
+    content: any;
 }
 
 const PlayerConnectionStatus = z.enum(["new", "disconnected", "reconnected", "existing"]);
