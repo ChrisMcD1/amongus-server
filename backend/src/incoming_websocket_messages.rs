@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 #[derive(Message, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
+#[serde(tag = "type")]
 #[rtype(result = "()")]
 pub enum IncomingWebsocketMessage {
     KillPlayer(KillPlayer),
