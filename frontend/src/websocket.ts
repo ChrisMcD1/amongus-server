@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { changeColor } from "./JoinGame/colorSlice";
-import { addPlayer } from './playersSlice';
+import { addPlayer, setPlayerColor, setPlayerName } from './playersSlice';
 import { setUser } from "./JoinGame/userSlice";
 import Color from "color";
 import store from './store';
@@ -52,6 +52,8 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                     "--shadow-color",
                     darkerColor.hex()
                 );
+                dispatch(setPlayerColor(color));
+                dispatch(setPlayerName(playerStatus.username));
             }
             break;
         }

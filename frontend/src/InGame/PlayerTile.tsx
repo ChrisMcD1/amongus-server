@@ -1,6 +1,7 @@
 import { Player } from "./StatusOverview";
 
 export default function PlayerTile(props: Player) {
+  console.log(props);
   return (
     <div className="m-1 flex flex-col items-center rounded-xl border-2 border-solid border-white p-2">
       <div

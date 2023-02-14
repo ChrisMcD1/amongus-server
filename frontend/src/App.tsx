@@ -1,6 +1,7 @@
 import Lobby from "./JoinGame/Lobby";
 import Home from "./JoinGame/Home";
 import Crewmate from "./InGame/Crewmate";
+import RoleAssignment from "./InGame/RoleAssignment";
 import { useState } from "react";
 import {
   BrowserRouter as Router,
@@ -52,7 +53,10 @@ export default function App() {
     <Router>
       <Provider store={store}>
         <Routes>
-          <Route path="/lobby" element={<Lobby username={username} />} />
+          <Route
+            path="/lobby"
+            element={<Lobby username={username} ws={ws} />}
+          />
           <Route
             path="/"
             element={

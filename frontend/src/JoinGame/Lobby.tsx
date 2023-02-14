@@ -3,10 +3,11 @@ import {ReactComponent as Whitetest} from "./Whitetest.svg";
 import { BlockPicker, ColorResult } from "react-color";
 import start from "./start.png";
 import { useNavigate } from "react-router-dom";
-type LobbyProps = { username: string };
+type LobbyProps = { username: string; ws: WebSocket | undefined;};
 import Color from "color";
 import { useAppSelector, useAppDispatch } from '../hooks'
 import { changeColor } from './colorSlice'
+import { setPlayerColor } from "../playersSlice";
 
 
 export default function Lobby(props: LobbyProps) {
@@ -19,15 +20,20 @@ export default function Lobby(props: LobbyProps) {
   const handleChange = (color: ColorResult) => {
     setBackground(color.hex);
     dispatch(changeColor(color.hex));
-    
+    dispatch(setPlayerColor(color.hex));
     let darkerColor = Color(color.hex).darken(0.3);
     document.documentElement.style.setProperty("--base-color", color.hex);
     document.documentElement.style.setProperty("--shadow-color", darkerColor.hex());
+    let colorMSG = '{"type": "ChooseColor", "content" : { "color" :"' + color.hex + '"}}';
+    if (props.ws) {
+      props.ws.send(colorMSG);
+    }
   };
 
   const startGame = () => {
     fetch("http://localhost:9090/start-game", { method: "POST" });
-    navigate("/status-overview");
+    navigate("/begin");
+    setTimeout(() => navigate("/status-overview"),2000);
   };
 
   return (
