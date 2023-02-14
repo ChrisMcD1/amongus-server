@@ -57,10 +57,7 @@ export default function App() {
             path="/lobby"
             element={<Lobby username={username} ws={ws} />}
           />
-          <Route
-            path="/role"
-            element={<RoleAssignment username={username} />}
-          />
+          <Route path="/role" element={<RoleAssignment />} />
           <Route
             path="/"
             element={

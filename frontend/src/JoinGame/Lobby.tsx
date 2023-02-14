@@ -38,7 +38,8 @@ export default function Lobby(props: LobbyProps) {
     const startGame = () => {
         fetch("http://localhost:9090/start-game", { method: "POST" });
         navigate("/begin");
-        setTimeout(() => navigate("/status-overview"), 2000);
+        setTimeout(() => navigate("/role"), 2000);
+        setTimeout(() => navigate("/status-overview"), 4000);
     };
 
     return (
