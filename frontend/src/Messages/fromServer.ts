@@ -13,3 +13,27 @@ export const PlayerStatus = z.object({
     id: z.string(),
     status: PlayerConnectionStatus
 })
+
+export const VotingResults = z.object({
+    ejectedPlayer: z.string().nullable()
+})
+
+export const BodyReported = z.object({
+    corpse: z.string(),
+    initiator: z.string(),
+})
+
+export const PlayerDied = z.object({
+    killer: z.string(),
+})
+
+export const ChatMessage = z.object({
+    contents: z.string(),
+})
+
+export const GameStateEnum = z.enum(["lobby", "inGame"]);
+
+export const GameState = z.object({
+    state: z.string(),
+})
+
