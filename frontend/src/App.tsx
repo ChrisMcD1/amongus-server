@@ -58,6 +58,10 @@ export default function App() {
             element={<Lobby username={username} ws={ws} />}
           />
           <Route
+            path="/role"
+            element={<RoleAssignment username={username} />}
+          />
+          <Route
             path="/"
             element={
               <Home
@@ -68,7 +72,7 @@ export default function App() {
             }
           />
           <Route path="/crewmate" element={<Crewmate username={username} />} />
-          <Route path="/begin" element={<GameBegin username={username} />} />
+          <Route path="/begin" element={<GameBegin />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/status-overview" element={<StatusOverview />} />
         </Routes>
