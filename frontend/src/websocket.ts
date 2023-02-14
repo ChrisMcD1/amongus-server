@@ -1,9 +1,9 @@
-import { z } from "zod";
 import { changeColor } from "./JoinGame/colorSlice";
-import { addPlayer, setPlayerColor, setPlayerName } from './playersSlice';
+import { addPlayer } from './playersSlice';
 import { setUser } from "./JoinGame/userSlice";
 import Color from "color";
 import store from './store';
+import { PlayerStatus, PreZodMessage } from "./Messages/fromServer";
 
 
 export function configureWebsocket(ws: WebSocket): WebSocket {
@@ -52,8 +52,6 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                     "--shadow-color",
                     darkerColor.hex()
                 );
-                dispatch(setPlayerColor(color));
-                dispatch(setPlayerName(playerStatus.username));
             }
             break;
         }
@@ -64,16 +62,3 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
     }
 }
 
-type PreZodMessage = {
-    type: "PlayerStatus"; // TODO: This string literal will grow as we add more
-    content: any;
-}
-
-const PlayerConnectionStatus = z.enum(["new", "disconnected", "reconnected", "existing"]);
-
-const PlayerStatus = z.object({
-    username: z.string(),
-    color: z.string(),
-    id: z.string(),
-    status: PlayerConnectionStatus
-})
