@@ -14,7 +14,7 @@ import GameBegin from "./InGame/GameBegin";
 import { Provider } from "react-redux";
 import store from "./state/store";
 import Admin from "./Admin/Admin";
-import { setUser } from "./state/userSlice";
+import { setUserID } from "./state/userSlice";
 
 export default function App() {
     const [username, setUsername] = useState("");
@@ -27,7 +27,7 @@ export default function App() {
     console.log(`Player has id: ${player_id}`);
 
     if (player_id != null) {
-        store.dispatch(setUser(player_id));
+        store.dispatch(setUserID(player_id));
     }
 
 
@@ -43,6 +43,10 @@ export default function App() {
                     ws = configureWebsocket(ws);
                     console.log(ws);
                     setWs(ws);
+
+                    if (player_id != null) {
+                        store.dispatch(setUserID(player_id));
+                    }
                 } else {
                     document.cookie =
                         "player_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";

@@ -117,6 +117,8 @@ impl Actor for PlayerWebsocket {
     type Context = ws::WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         self.heartbeat(ctx);
+        ctx.address()
+            .do_send(OutgoingWebsocketMessage::AssignedID(self.id));
         self.game.do_send(RegisterPlayerWebsocket {
             id: self.id,
             websocket: ctx.address(),

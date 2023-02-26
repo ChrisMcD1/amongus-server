@@ -8,6 +8,7 @@ use uuid::Uuid;
 #[rtype(result = "()")]
 pub enum OutgoingWebsocketMessage {
     ChatMessage(ChatMessage),
+    AssignedID(Uuid),
     PlayerStatus(PlayerStatus),
     GameState(GameState),
     PlayerRole(SetRole),

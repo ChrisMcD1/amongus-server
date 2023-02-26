@@ -2,6 +2,7 @@ import { updatePlayerStatus } from './state/playersSlice';
 import store from './state/store';
 import { ChatMessage, PlayerStatus, PreZodMessage } from "./Messages/fromServer";
 import z from "zod";
+import { setUserID } from './state/userSlice';
 
 
 export function configureWebsocket(ws: WebSocket): WebSocket {
@@ -19,6 +20,11 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
     switch (parsed.type) {
         case "ChatMessage": {
             let chatMessage = ChatMessage.parse(parsed.content);
+            break;
+        }
+        case "AssignedID": {
+            store.dispatch(setUserID(parsed.content));
+            break;
         }
         case "PlayerStatus": {
             let playerStatus = PlayerStatus.parse(parsed.content);

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { configureWebsocket } from "../websocket";
 import { useAppDispatch } from "../hooks";
-import { setUser } from "../state/userSlice";
+import { setUserID } from "../state/userSlice";
 
 type HomeProps = {
     username: string;
@@ -19,6 +19,14 @@ export default function Home(props: HomeProps) {
         let ws = new WebSocket(
             `ws://localhost:9090/join-game?username=${props.username}`
         );
+        const player_id = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("player_id="))
+            ?.split("=")[1];
+        console.log(`Player has id: ${player_id}`);
+        if (player_id != null) {
+            dispatch(setUserID(player_id))
+        }
         ws = configureWebsocket(ws);
         props.setWs(ws);
         navigate("/lobby");

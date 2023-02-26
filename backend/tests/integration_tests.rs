@@ -30,6 +30,7 @@ async fn player_joins_game() {
         .await
         .unwrap();
 
+    let _assigned_id_frame = connection.next().await.unwrap().unwrap();
     let join_message_frame = connection.next().await.unwrap().unwrap();
 
     let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
@@ -122,7 +123,9 @@ async fn other_player_receives_disconnect() {
 
     kate_connection.close().await.unwrap();
 
+    let _assigned_id = chris_connection.next().await;
     let _chris_join = chris_connection.next().await;
+
     let kate_join_frame = chris_connection.next().await.unwrap().unwrap();
     let kate_join = test_fixtures::get_websocket_frame_data(kate_join_frame).unwrap();
 
@@ -134,6 +137,7 @@ async fn other_player_receives_disconnect() {
     let kate_disconnect = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
         username: "Kate".to_string(),
         id: kate_id,
+        color: "#FFFFFF".to_string(),
         status: PlayerConnectionStatus::Disconnected,
     });
     assert_connection_recieves_message(&mut chris_connection, kate_disconnect).await;
@@ -163,6 +167,7 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
 
     let _ = server.post("/start-game").send().await;
 
+    let _assigned_id = crewmate_connection.next().await.unwrap().unwrap();
     let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
     let _imposter_join = crewmate_connection.next().await.unwrap().unwrap();
     let second_crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
@@ -230,6 +235,7 @@ async fn imposter_kills_sucessfully_and_ends_game() {
 
     let _ = server.post("/start-game").send().await;
 
+    let _crewmate_assigned_id = crewmate_connection.next().await.unwrap().unwrap();
     let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
     let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
 
@@ -287,6 +293,7 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
 
     let _ = server.post("/start-game").send().await;
 
+    let _crewmate_assigned_id = crewmate_connection.next().await.unwrap().unwrap();
     let _crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
     let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
 
@@ -340,6 +347,8 @@ async fn player_changes_color() {
         .connect()
         .await
         .unwrap();
+
+    let _assigned_id_frame = connection.next().await.unwrap().unwrap();
 
     let join_message_frame = connection.next().await.unwrap().unwrap();
     let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
@@ -399,6 +408,7 @@ async fn reset_game_works_basic() {
 
     let _ = server.post("/reset-game").send().await;
 
+    let _assigned_id_frame = chris_connection.next().await.unwrap().unwrap();
     let _join = chris_connection.next().await;
 
     let no_message = chris_connection.next().await;

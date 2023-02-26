@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export type PreZodMessage = {
     type: "ChatMessage" |
+    "AssignedID" |
     "PlayerStatus" |
     "GameState" | "PlayerRole" | "PlayerDied" | "SuccessfulKill" | "InvalidAction" | "BodyReported" | "VotingResults" | "GameOver";
     content: any;
