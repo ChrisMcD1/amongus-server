@@ -192,7 +192,7 @@ impl Game {
                             initiating_player.send_outgoing_message(
                                 OutgoingWebsocketMessage::InvalidAction(format!(
                                     "You cannot kill {} since they are already dead",
-                                    target_player.name
+                                    target_player.username
                                 )),
                             );
                             return;
@@ -246,7 +246,21 @@ impl Handler<IncomingMessageInternal> for Game {
                     .get(&msg.initiator)
                     .unwrap()
                     .borrow_mut()
-                    .set_color(choose_color.color);
+                    .set_color(choose_color.color.clone());
+                self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
+                    PlayerStatus {
+                        username: self
+                            .players
+                            .get(&msg.initiator)
+                            .unwrap()
+                            .borrow()
+                            .username
+                            .clone(),
+                        id: msg.initiator.clone(),
+                        color: choose_color.color,
+                        status: PlayerConnectionStatus::Existing,
+                    },
+                ))
             }
         }
     }
@@ -266,9 +280,9 @@ impl Handler<PlayerDisconnected> for Game {
             Some(player) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
                     PlayerStatus {
-                        username: player.borrow().name.clone(),
+                        username: player.borrow().username.clone(),
                         id: msg.id,
-                        color:player.borrow().color.clone(),
+                        color: player.borrow().color.clone(),
                         status: PlayerConnectionStatus::Disconnected,
                     },
                 ));
@@ -327,14 +341,14 @@ impl Handler<RegisterPlayerWebsocket> for Game {
                 player
                     .borrow()
                     .send_outgoing_message(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                        username: existing_player.name.clone(),
+                        username: existing_player.username.clone(),
                         id: existing_player.id,
                         color: existing_player.color.clone(),
                         status: PlayerConnectionStatus::Existing,
                     }))
             });
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            username: player.name.clone(),
+            username: player.username.clone(),
             id: player.id,
             color: player.color.clone(),
             status: player_status,

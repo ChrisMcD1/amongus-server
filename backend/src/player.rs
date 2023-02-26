@@ -14,7 +14,7 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 #[derive(Debug)]
 pub struct Player {
     pub role: Option<Role>,
-    pub name: String,
+    pub username: String,
     pub alive: bool,
     pub color: String,
     pub has_connected_previously: bool,
@@ -26,7 +26,7 @@ impl Player {
     pub fn new(name: &str, id: Uuid) -> Self {
         Player {
             role: None,
-            name: name.to_string(),
+            username: name.to_string(),
             alive: true,
             color: "#FFFFFF".to_string(),
             has_connected_previously: false,

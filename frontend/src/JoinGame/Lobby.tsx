@@ -29,7 +29,7 @@ export default function Lobby(props: LobbyProps) {
 
     const handleChange = (color: ColorResult) => {
         setBackground(color.hex);
-        dispatch(setPlayerColor({ color: color.hex, id: useSelector(selectCurrentPlayer)!.id }));
+        dispatch(setPlayerColor({ color: color.hex, id: currentPlayer!.id }));
         let colorMsg = {
             type: "ChooseColor",
             content: {
