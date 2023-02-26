@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ReactComponent as Whitetest } from "./Whitetest.svg";
 import { BlockPicker, ColorResult } from "react-color";
-import start from "./start.png";
 import { useNavigate } from "react-router-dom";
 type LobbyProps = { username: string; ws: WebSocket | undefined; };
 import Color from "color";
@@ -35,12 +34,6 @@ export default function Lobby(props: LobbyProps) {
         }
     };
 
-    const startGame = () => {
-        fetch("http://localhost:9090/start-game", { method: "POST" });
-        navigate("/begin");
-        setTimeout(() => navigate("/status-overview"), 2000);
-    };
-
     return (
         <div className="h-screen w-screen items-center bg-lobby bg-cover bg-center">
             <div className="flex flex-col items-center">
@@ -49,12 +42,6 @@ export default function Lobby(props: LobbyProps) {
                     className="player absolute inset-1/4 top-[27%] mx-auto h-12 items-center md:h-20"
                     onClick={() => setCheck(!check)}
                 />
-                <button
-                    style={{ display: check ? "none" : "initial" }}
-                    className="fixed top-1/2 mx-auto bg-transparent"
-                >
-                    <img src={start} onClick={startGame} />
-                </button>
                 <div
                     className="absolute top-1/3"
                     style={{ display: check ? "initial" : "none" }}
