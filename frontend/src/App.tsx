@@ -12,8 +12,9 @@ import Dashboard from "./InGame/Dashboard";
 import { configureWebsocket } from "./websocket";
 import GameBegin from "./InGame/GameBegin";
 import { Provider } from "react-redux";
-import store from "./store";
+import store from "./state/store";
 import Admin from "./Admin/Admin";
+import { setUser } from "./state/userSlice";
 
 export default function App() {
     const [username, setUsername] = useState("");
@@ -24,6 +25,11 @@ export default function App() {
         .find((row) => row.startsWith("player_id="))
         ?.split("=")[1];
     console.log(`Player has id: ${player_id}`);
+
+    if (player_id != null) {
+        store.dispatch(setUser(player_id));
+    }
+
 
     if (player_id != null && ws == null) {
         fetch(`http://localhost:9090/player-exists?id=${player_id}`)

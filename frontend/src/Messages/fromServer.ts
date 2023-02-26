@@ -1,9 +1,15 @@
 import { z } from "zod";
 
 export type PreZodMessage = {
-    type: "PlayerStatus"; // TODO: This string literal will grow as we add more
+    type: "ChatMessage" |
+    "PlayerStatus" |
+    "GameState" | "PlayerRole" | "PlayerDied" | "SuccessfulKill" | "InvalidAction" | "BodyReported" | "VotingResults" | "GameOver";
     content: any;
 }
+
+export const ChatMessage = z.object({
+    contents: z.string()
+})
 
 export const PlayerConnectionStatus = z.enum(["new", "disconnected", "reconnected", "existing"]);
 
@@ -14,26 +20,28 @@ export const PlayerStatus = z.object({
     status: PlayerConnectionStatus
 })
 
-export const VotingResults = z.object({
-    ejectedPlayer: z.string().nullable()
+export const GameStateEnum = z.enum(["lobby", "inGame"]);
+
+export const GameState = z.object({
+    state: z.string(),
 })
 
-export const BodyReported = z.object({
-    corpse: z.string(),
-    initiator: z.string(),
+export const RoleAssignment = z.enum(["imposter", "crewmate"]);
+
+export const SetRole = z.object({
+    role: RoleAssignment
 })
 
 export const PlayerDied = z.object({
     killer: z.string(),
 })
 
-export const ChatMessage = z.object({
-    contents: z.string(),
+export const BodyReported = z.object({
+    corpse: z.string(),
+    initiator: z.string()
 })
 
-export const GameStateEnum = z.enum(["lobby", "inGame"]);
-
-export const GameState = z.object({
-    state: z.string(),
+export const VotingResults = z.object({
+    ejectedPlayer: z.string().nullable()
 })
 
