@@ -24,7 +24,7 @@ export const PlayerStatus = z.object({
 export const GameStateEnum = z.enum(["lobby", "inGame"]);
 
 export const GameState = z.object({
-    state: z.string(),
+    state: GameStateEnum,
 })
 
 export const RoleAssignment = z.enum(["imposter", "crewmate"]);

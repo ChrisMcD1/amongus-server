@@ -1,8 +1,9 @@
 import { updatePlayerStatus } from './state/playersSlice';
 import store from './state/store';
-import { ChatMessage, PlayerStatus, PreZodMessage } from "./Messages/fromServer";
+import { ChatMessage, GameState, PlayerStatus, PreZodMessage } from "./Messages/fromServer";
 import z from "zod";
 import { setUserID } from './state/userSlice';
+import { push } from 'redux-first-history';
 
 
 export function configureWebsocket(ws: WebSocket): WebSocket {
@@ -24,6 +25,22 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
         }
         case "AssignedID": {
             store.dispatch(setUserID(parsed.content));
+            break;
+        }
+        case "GameState": {
+            const gameState = GameState.parse(parsed.content);
+            switch (gameState.state) {
+                case "lobby": {
+                    break;
+                }
+                case "inGame": {
+                    store.dispatch(push("/status-overview"))
+                }
+                default: {
+                    throw new Error("Received unknown game state!");
+                }
+
+            }
             break;
         }
         case "PlayerStatus": {

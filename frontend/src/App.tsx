@@ -3,16 +3,18 @@ import Home from "./JoinGame/Home";
 import Crewmate from "./InGame/Crewmate";
 import { useState } from "react";
 import {
-    BrowserRouter as Router,
     Routes,
     Route,
 } from "react-router-dom";
+import {
+    HistoryRouter as Router
+} from "redux-first-history/rr6";
 import StatusOverview from "./InGame/StatusOverview";
 import Dashboard from "./InGame/Dashboard";
 import { configureWebsocket } from "./websocket";
 import GameBegin from "./InGame/GameBegin";
 import { Provider } from "react-redux";
-import store from "./state/store";
+import { store, history } from "./state/store";
 import Admin from "./Admin/Admin";
 import { setUserID } from "./state/userSlice";
 
@@ -55,8 +57,8 @@ export default function App() {
     }
 
     return (
-        <Router>
-            <Provider store={store}>
+        <Provider store={store}>
+            <Router history={history}>
                 <Routes>
                     <Route
                         path="/lobby"
@@ -78,7 +80,7 @@ export default function App() {
                     <Route path="/status-overview" element={<StatusOverview />} />
                     <Route path="/admin" element={<Admin />} />
                 </Routes>
-            </Provider>
-        </Router>
+            </Router>
+        </Provider>
     );
 }
