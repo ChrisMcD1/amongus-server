@@ -300,6 +300,7 @@ impl Handler<HasGameStarted> for Game {
     fn handle(&mut self, _msg: HasGameStarted, _ctx: &mut Self::Context) -> Self::Result {
         match self.state {
             GameStateEnum::Lobby => false,
+            GameStateEnum::Reset => false,
             GameStateEnum::InGame => true,
         }
     }
@@ -355,6 +356,26 @@ impl Handler<RegisterPlayerWebsocket> for Game {
         }));
     }
 }
+impl Handler<TellPlayerRole> for Game {
+    type Result = ();
+    fn handle(&mut self, msg: TellPlayerRole, _ctx: &mut Self::Context) -> Self::Result {
+        let player = self.players.get(&msg.id).unwrap().borrow();
+        let role = player.role.clone();
+        if let Some(role) = role {
+            let role_assignment = match role {
+                Role::Imposter(_) => RoleAssignment::Imposter,
+                Role::Crewmate => RoleAssignment::Crewmate,
+            };
+            player
+                .websocket
+                .as_ref()
+                .unwrap()
+                .do_send(OutgoingWebsocketMessage::PlayerRole(SetRole {
+                    role: role_assignment,
+                }))
+        }
+    }
+}
 
 impl Handler<PlayerExists> for Game {
     type Result = bool;
@@ -374,6 +395,9 @@ impl Handler<ResetGame> for Game {
     type Result = ();
     fn handle(&mut self, _msg: ResetGame, _ctx: &mut Self::Context) -> Self::Result {
         self.state = GameStateEnum::Lobby;
+        self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
+            state: GameStateEnum::Reset,
+        }));
         for (_, player) in self.players.iter() {
             player.borrow_mut().close_websocket();
         }

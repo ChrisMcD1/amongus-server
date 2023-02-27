@@ -1,11 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { v4 as uuidV4 } from "uuid";
-import { PlayerStatus } from '../Messages/fromServer';
+import { PlayerStatus, RoleAssignment } from '../Messages/fromServer';
 import { RootState } from "./store"
 import z from "zod";
 
 export type Player = {
-    role: string | null;
+    role: z.infer<typeof RoleAssignment> | null;
     color: string;
     username: string;
     alive: boolean;
@@ -26,6 +26,11 @@ export function selectOtherPlayers(store: RootState) {
 
 export function selectCurrentPlayer(store: RootState) {
     return store.players.players.find(player => player.id === store.user.id);
+}
+
+export type SetPlayerRolePayload = {
+    role: z.infer<typeof RoleAssignment>,
+    id: string
 }
 
 export type SetPlayerColorPayload = {
@@ -51,16 +56,26 @@ export const playersSlice = createSlice({
                 existingPlayer.username = payload.username;
             }
         },
+        setPlayerRole: (state, action: PayloadAction<SetPlayerRolePayload>) => {
+            const player = state.players.find(player => player.id === action.payload.id);
+            if (player == null) {
+                throw new Error("Cannot set player role of null player");
+            }
+            player.role = action.payload.role;
+        },
         setPlayerColor: (state, action: PayloadAction<SetPlayerColorPayload>) => {
             const player = state.players.find(player => player.id === action.payload.id);
             if (player == null) {
                 throw new Error("Cannot set player color of null player");
             }
             player.color = action.payload.color;
+        },
+        deleteAllPlayers: (state, _action: PayloadAction<void>) => {
+            state.players = [];
         }
     }
 })
 
-export const { updatePlayerStatus, setPlayerColor } = playersSlice.actions
+export const { updatePlayerStatus, setPlayerColor, deleteAllPlayers, setPlayerRole } = playersSlice.actions
 
 export default playersSlice.reducer

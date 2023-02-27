@@ -1,8 +1,8 @@
-import { updatePlayerStatus } from './state/playersSlice';
+import { deleteAllPlayers, selectCurrentPlayer, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
 import store from './state/store';
-import { ChatMessage, GameState, PlayerStatus, PreZodMessage } from "./Messages/fromServer";
+import { ChatMessage, GameState, PlayerStatus, PreZodMessage, RoleAssignment, SetRole } from "./Messages/fromServer";
 import z from "zod";
-import { setUserID } from './state/userSlice';
+import { selectCurrentPlayerID, setUserID } from './state/userSlice';
 import { push } from 'redux-first-history';
 
 
@@ -23,6 +23,15 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
             let chatMessage = ChatMessage.parse(parsed.content);
             break;
         }
+        case "PlayerRole": {
+            let currentPlayerID = selectCurrentPlayerID(store.getState());
+            let playerRole = SetRole.parse(parsed.content);
+            store.dispatch(setPlayerRole({
+                id: currentPlayerID,
+                role: playerRole.role
+            }))
+            break;
+        }
         case "AssignedID": {
             store.dispatch(setUserID(parsed.content));
             break;
@@ -34,7 +43,13 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                     break;
                 }
                 case "inGame": {
-                    store.dispatch(push("/status-overview"))
+                    store.dispatch(push("/status-overview"));
+                    break;
+                }
+                case "reset": {
+                    store.dispatch(push("/"));
+                    store.dispatch(deleteAllPlayers());
+                    break;
                 }
                 default: {
                     throw new Error("Received unknown game state!");

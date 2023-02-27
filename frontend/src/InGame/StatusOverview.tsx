@@ -1,18 +1,24 @@
 import PlayerTile from "./PlayerTile";
+import ImposterAbilities from "./ImposterAbilities";
 import { useAppSelector } from "../hooks";
+import { selectCurrentPlayer, selectOtherPlayers } from "../state/playersSlice";
 
 type StatusOverviewProps = {};
 
 function StatusOverview(_props: StatusOverviewProps) {
-    const { players } = useAppSelector((state) => state.players);
+    const currentPlayer = useAppSelector(selectCurrentPlayer);
+    const otherPlayers = useAppSelector(selectOtherPlayers);
     return (
-        <div className="flex h-screen flex-col place-content-center justify-center">
-            <h1 className="mx-auto mt-0 mb-10">Game Overview</h1>
-            <div className="justify-left flex flex-wrap place-content-center">
-                {players.map((player) => (
-                    <PlayerTile key={player.id} {...player} />
-                ))}
+        <div className="flex h-screen flex-col place-content-center justify-center p-5">
+            <div>
+                <div className="justify-center flex flex-wrap place-content-center">
+                    {otherPlayers.map((player) => (
+                        <PlayerTile key={player.id} {...player} />
+                    ))}
+
+                </div>
             </div>
+            {currentPlayer?.role === "imposter" && <ImposterAbilities />}
         </div>
     );
 }

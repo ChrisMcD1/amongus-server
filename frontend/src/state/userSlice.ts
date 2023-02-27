@@ -1,11 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { RootState } from './store'
 
-interface userState {
+interface UserState {
     id: string,
     webSocket: WebSocket | null
 }
 
-const initialState: userState = {
+export function selectCurrentPlayerID(store: RootState) {
+    return store.user.id;
+}
+
+const initialState: UserState = {
     id: '',
     webSocket: null
 }

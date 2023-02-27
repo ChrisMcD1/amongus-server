@@ -123,6 +123,7 @@ impl Actor for PlayerWebsocket {
             id: self.id,
             websocket: ctx.address(),
         });
+        self.game.do_send(TellPlayerRole { id: self.id });
     }
     fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
         println!("Stopping websocket");

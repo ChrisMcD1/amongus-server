@@ -21,7 +21,7 @@ export const PlayerStatus = z.object({
     status: PlayerConnectionStatus
 })
 
-export const GameStateEnum = z.enum(["lobby", "inGame"]);
+export const GameStateEnum = z.enum(["lobby", "inGame", "reset"]);
 
 export const GameState = z.object({
     state: GameStateEnum,

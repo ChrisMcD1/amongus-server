@@ -51,6 +51,7 @@ pub struct PlayerStatus {
 pub enum GameStateEnum {
     Lobby,
     InGame,
+    Reset,
 }
 
 #[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]

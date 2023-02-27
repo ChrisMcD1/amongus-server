@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ReactComponent as Whitetest } from "./Whitetest.svg";
+import { ReactComponent as AmongusMan } from "./Whitetest.svg";
 import { BlockPicker, ColorResult } from "react-color";
 import { useNavigate } from "react-router-dom";
 type LobbyProps = { username: string; ws: WebSocket | undefined; };
@@ -7,6 +7,7 @@ import Color from "color";
 import { useAppDispatch } from '../hooks'
 import { selectCurrentPlayer, selectOtherPlayers, setPlayerColor } from "../state/playersSlice";
 import { useSelector } from "react-redux";
+import PlayerTile from "../InGame/PlayerTile";
 
 
 export default function Lobby(props: LobbyProps) {
@@ -45,7 +46,7 @@ export default function Lobby(props: LobbyProps) {
         <div className="h-screen w-screen items-center bg-lobby bg-cover bg-center">
             <div className="flex flex-col items-center">
                 <h3 className="mx-auto absolute font-amongus-log top-[9rem] md:top-[20rem] md:text-lg text-white">{currentPlayer?.username}</h3>
-                <Whitetest
+                <AmongusMan
                     className="player absolute inset-1/4 top-[27%] mx-auto h-12 items-center md:h-20"
                     onClick={() => setCheck(!check)}
                 />
@@ -56,14 +57,11 @@ export default function Lobby(props: LobbyProps) {
                     <BlockPicker color={background} onChange={handleChange} />
                 </div>
             </div>
-            <div>
-                {otherPlayers.map((player) => {
-                    return <div key={player.id} className="flex">
-                        <h4>{player.username}: </h4>
-                        <p>{player.color}</p>
-                    </div>
-
-                })}
+            <div className="absolute bottom-0">
+                {otherPlayers.map((player) => (
+                    <PlayerTile key={player.id} {...player} />
+                ))
+                }
             </div>
         </div>
     );

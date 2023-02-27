@@ -37,6 +37,12 @@ pub struct RegisterPlayerWebsocket {
 
 #[derive(Message)]
 #[rtype(result = "()")]
+pub struct TellPlayerRole {
+    pub id: Uuid,
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
 pub struct StartGame {}
 
 #[derive(Message)]
