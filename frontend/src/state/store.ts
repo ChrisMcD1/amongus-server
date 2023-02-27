@@ -1,4 +1,4 @@
-import { combineReducers, configureStore, getDefaultMiddleware } from '@reduxjs/toolkit';
+import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit';
 import userReducer from './userSlice';
 import playersReducer from './playersSlice';
 import { createReduxHistoryContext } from 'redux-first-history';
@@ -9,11 +9,11 @@ const { createReduxHistory, routerMiddleware, routerReducer } = createReduxHisto
 })
 
 export const store = configureStore({
-    reducer: combineReducers({
+    reducer: {
         router: routerReducer,
         user: userReducer,
         players: playersReducer,
-    }),
+    },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(routerMiddleware),
 })
 
