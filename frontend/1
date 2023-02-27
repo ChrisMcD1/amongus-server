@@ -3,6 +3,7 @@ import { RootState } from './store'
 
 interface UserState {
     id: string,
+    webSocket: WebSocket | null
 }
 
 export function selectCurrentPlayerID(store: RootState) {
@@ -11,6 +12,7 @@ export function selectCurrentPlayerID(store: RootState) {
 
 const initialState: UserState = {
     id: '',
+    webSocket: null
 }
 
 export const userSlice = createSlice({
@@ -20,6 +22,10 @@ export const userSlice = createSlice({
         setUserID: (state, action: PayloadAction<string>) => {
             state.id = action.payload
         },
+        setWebsocket: (state, action: PayloadAction<WebSocket>) => {
+
+        }, w!
+
     }
 })
 

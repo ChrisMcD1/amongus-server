@@ -8,6 +8,7 @@ import { useAppDispatch } from '../hooks'
 import { selectCurrentPlayer, selectOtherPlayers, setPlayerColor } from "../state/playersSlice";
 import { useSelector } from "react-redux";
 import PlayerTile from "../InGame/PlayerTile";
+import { createColorMessage } from "../Messages/toServer";
 
 
 export default function Lobby(props: LobbyProps) {
@@ -31,14 +32,8 @@ export default function Lobby(props: LobbyProps) {
     const handleChange = (color: ColorResult) => {
         setBackground(color.hex);
         dispatch(setPlayerColor({ color: color.hex, id: currentPlayer!.id }));
-        let colorMsg = {
-            type: "ChooseColor",
-            content: {
-                color: color.hex
-            }
-        };
         if (props.ws) {
-            props.ws.send(JSON.stringify(colorMsg));
+            props.ws.send(createColorMessage(color.hex));
         }
     };
 

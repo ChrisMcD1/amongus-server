@@ -91,6 +91,7 @@ pub struct BodyReported {
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Winner {
     Imposters,
     Crewmates,

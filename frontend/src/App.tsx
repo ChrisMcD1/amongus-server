@@ -17,6 +17,7 @@ import { Provider } from "react-redux";
 import { store, history } from "./state/store";
 import Admin from "./Admin/Admin";
 import { setUserID } from "./state/userSlice";
+import ImposterVictory from "./InGame/ImposterVictory";
 
 export default function App() {
     const [username, setUsername] = useState("");
@@ -77,8 +78,9 @@ export default function App() {
                     <Route path="/crewmate" element={<Crewmate username={username} />} />
                     <Route path="/begin" element={<GameBegin username={username} />} />
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/status-overview" element={<StatusOverview />} />
+                    <Route path="/status-overview" element={<StatusOverview ws={ws} />} />
                     <Route path="/admin" element={<Admin />} />
+                    <Route path="/imposter-victory" element={<ImposterVictory />} />
                 </Routes>
             </Router>
         </Provider>

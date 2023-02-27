@@ -42,6 +42,8 @@ export const BodyReported = z.object({
     initiator: z.string()
 })
 
+export const Winner = z.enum(["imposters", "crewmates"]);
+
 export const VotingResults = z.object({
     ejectedPlayer: z.string().nullable()
 })

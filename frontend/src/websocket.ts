@@ -1,6 +1,6 @@
-import { deleteAllPlayers, selectCurrentPlayer, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
+import { deleteAllPlayers, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
 import store from './state/store';
-import { ChatMessage, GameState, PlayerStatus, PreZodMessage, RoleAssignment, SetRole } from "./Messages/fromServer";
+import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner } from "./Messages/fromServer";
 import z from "zod";
 import { selectCurrentPlayerID, setUserID } from './state/userSlice';
 import { push } from 'redux-first-history';
@@ -61,6 +61,22 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
         case "PlayerStatus": {
             let playerStatus = PlayerStatus.parse(parsed.content);
             handlePlayerStatusMessage(playerStatus);
+            break;
+        }
+        case "GameOver": {
+            const winner = Winner.parse(parsed.content);
+            switch (winner) {
+                case "imposters": {
+                    store.dispatch(push("/imposter-victory"))
+                    break;
+                }
+                case "crewmates": {
+                    throw new Error("Not implemented")
+                }
+                default: {
+                    throw new Error("Unreachable");
+                }
+            }
             break;
         }
         default: {
