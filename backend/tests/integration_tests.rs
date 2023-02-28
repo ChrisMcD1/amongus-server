@@ -408,14 +408,11 @@ async fn reset_game_works_basic() {
 
     let _ = server.post("/reset-game").send().await;
 
-    let _assigned_id_frame = chris_connection.next().await.unwrap().unwrap();
-    let _join = chris_connection.next().await;
+    let game_reset_msg = OutgoingWebsocketMessage::GameState(GameState {
+        state: GameStateEnum::Reset,
+    });
 
-    let no_message = chris_connection.next().await;
-
-    let websocket_disconnected = no_message.is_none();
-
-    assert_eq!(websocket_disconnected, true);
+    assert_connection_recieves_message(&mut chris_connection, game_reset_msg).await;
 }
 
 mod test_fixtures {
