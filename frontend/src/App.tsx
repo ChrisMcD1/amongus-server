@@ -10,12 +10,11 @@ import {
     HistoryRouter as Router
 } from "redux-first-history/rr6";
 import StatusOverview from "./InGame/StatusOverview";
-import Dashboard from "./InGame/Dashboard";
 import { configureWebsocket } from "./websocket";
 import GameBegin from "./InGame/GameBegin";
 import { Provider } from "react-redux";
 import { store, history } from "./state/store";
-import Admin from "./Admin/Admin";
+import Dashboard from "./Dashboard/Dashboard";
 import { setUserID } from "./state/userSlice";
 import ImposterVictory from "./InGame/ImposterVictory";
 
@@ -79,7 +78,6 @@ export default function App() {
                     <Route path="/begin" element={<GameBegin username={username} />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/status-overview" element={<StatusOverview ws={ws} />} />
-                    <Route path="/admin" element={<Admin />} />
                     <Route path="/imposter-victory" element={<ImposterVictory />} />
                 </Routes>
             </Router>

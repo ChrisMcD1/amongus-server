@@ -1,6 +1,6 @@
 import start from "../../public/Pictures/start.png";
 
-export default function Admin() {
+export default function Dashboard() {
 
     function startGame() {
         fetch(`http://${import.meta.env.VITE_BACKEND_SERVER}/start-game`, { method: "POST" });
