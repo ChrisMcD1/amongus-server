@@ -17,7 +17,7 @@ export default function Home(props: HomeProps) {
     const navigate = useNavigate();
     const joinGame = async (_e: any) => {
         let ws = new WebSocket(
-            `ws://localhost:9090/join-game?username=${props.username}`
+            `ws://${import.meta.env.VITE_BACKEND_SERVER}/join-game?username=${props.username}`
         );
         const player_id = document.cookie
             .split("; ")

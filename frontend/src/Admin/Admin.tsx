@@ -3,11 +3,11 @@ import start from "../../public/Pictures/start.png";
 export default function Admin() {
 
     function startGame() {
-        fetch("http://localhost:9090/start-game", { method: "POST" });
+        fetch(`http://${import.meta.env.VITE_BACKEND_SERVER}/start-game`, { method: "POST" });
     };
 
     function resetGame() {
-        fetch("http://localhost:9090/reset-game", { method: "POST" });
+        fetch(`http://${import.meta.env.VITE_BACKEND_SERVER}/reset-game`, { method: "POST" });
     }
 
     return (

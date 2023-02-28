@@ -35,13 +35,13 @@ export default function App() {
 
 
     if (player_id != null && ws == null) {
-        fetch(`http://localhost:9090/player-exists?id=${player_id}`)
+        fetch(`http://${import.meta.env.VITE_BACKEND_SERVER}/player-exists?id=${player_id}`)
             .then((res) => res.json())
             .then((exists) => {
                 console.log(exists);
                 if (exists) {
                     let ws = new WebSocket(
-                        `ws://localhost:9090/player-rejoin-game?id=${player_id}`
+                        `ws://${import.meta.env.VITE_BACKEND_SERVER}/player-rejoin-game?id=${player_id}`
                     );
                     ws = configureWebsocket(ws);
                     console.log(ws);
