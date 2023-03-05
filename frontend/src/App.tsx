@@ -40,7 +40,7 @@ export default function App() {
                 console.log(exists);
                 if (exists) {
                     let ws = new WebSocket(
-                        `ws://${import.meta.env.VITE_BACKEND_SERVER}/player-rejoin-game?id=${player_id}`
+                        `wss://${import.meta.env.VITE_BACKEND_SERVER}/player-rejoin-game?id=${player_id}`
                     );
                     ws = configureWebsocket(ws);
                     console.log(ws);
