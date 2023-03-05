@@ -18,7 +18,7 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default().allow_any_origin().allow_any_header();
         App::new().configure(config_app(game.clone())).wrap(cors)
     })
-    .bind("127.0.0.1:9090")?
+    .bind("0.0.0.0:9090")?
     .run()
     .await
 }
