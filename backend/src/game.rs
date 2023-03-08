@@ -328,13 +328,35 @@ impl Handler<RegisterPlayerWebsocket> for Game {
             .get_mut(&msg.id)
             .expect("Tried to register websocket for a player that doesn't exist!")
             .set_websocket_address(msg.websocket);
-        let player = self.players.get(&msg.id).unwrap();
-        self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+        if let PlayerConnectionStatus::New = player_status {
+            let existing_players_status: Vec<OutgoingWebsocketMessage> = self
+                .players
+                .iter()
+                .filter(|(_, existing_player)| existing_player.id != msg.id)
+                .map(|(_, existing_player)| {
+                    return OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                        username: existing_player.username.clone(),
+                        id: existing_player.id,
+                        color: existing_player.color.clone(),
+                        status: PlayerConnectionStatus::Existing,
+                    });
+                })
+                .collect();
+
+            let player = self.players.get_mut(&msg.id).unwrap();
+            for existing_status in existing_players_status.into_iter() {
+                player.send_outgoing_message(existing_status);
+            }
+        }
+        let player = self.players.get_mut(&msg.id).unwrap();
+        let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: player.username.clone(),
             id: player.id,
             color: player.color.clone(),
             status: player_status,
-        }));
+        });
+        player.send_all_previous_messages();
+        self.send_message_to_all_users(player_status);
     }
 }
 impl Handler<TellPlayerRole> for Game {

@@ -52,8 +52,16 @@ impl Player {
         self.websocket = Some(websocket);
         self.has_connected_previously = true;
     }
+    pub fn send_all_previous_messages(&self) {
+        for msg in self.previously_sent_messages.iter() {
+            self.send_websocket_message_internal(msg.clone());
+        }
+    }
     pub fn send_outgoing_message(&mut self, msg: OutgoingWebsocketMessage) {
         self.previously_sent_messages.push(msg.clone());
+        self.send_websocket_message_internal(msg);
+    }
+    fn send_websocket_message_internal(&self, msg: OutgoingWebsocketMessage) {
         match &self.websocket {
             Some(websocket) => websocket.do_send(msg),
             None => {
@@ -126,7 +134,6 @@ impl Actor for PlayerWebsocket {
             id: self.id,
             websocket: ctx.address(),
         });
-        self.game.do_send(TellPlayerRole { id: self.id });
     }
     fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
         println!("Stopping websocket");
