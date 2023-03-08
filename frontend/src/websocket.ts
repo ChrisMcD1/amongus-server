@@ -60,7 +60,7 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
         }
         case "PlayerStatus": {
             let playerStatus = PlayerStatus.parse(parsed.content);
-            handlePlayerStatusMessage(playerStatus);
+            store.dispatch(updatePlayerStatus(playerStatus))
             break;
         }
         case "GameOver": {
@@ -86,11 +86,3 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
     }
 }
 
-function handlePlayerStatusMessage(playerStatus: z.infer<typeof PlayerStatus>) {
-    const dispatch = store.dispatch;
-    dispatch(updatePlayerStatus(playerStatus))
-}
-
-//function handleChatMessageMessage(chatMessage: z.infer<typeof ChatMessage>) {
-//    store.dispatch();
-//}
