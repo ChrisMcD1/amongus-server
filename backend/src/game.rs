@@ -1,12 +1,11 @@
 use crate::incoming_websocket_messages::IncomingWebsocketMessage;
 use crate::internal_messages::*;
+use crate::outgoing_websocket_messages::OutgoingWebsocketMessage;
 use crate::outgoing_websocket_messages::*;
 use crate::player::*;
 use actix::prelude::*;
 use rand::prelude::*;
 use rand_pcg::Pcg32;
-use std::borrow::Borrow;
-use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -17,7 +16,7 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub struct Game {
     state: GameStateEnum,
-    players: BTreeMap<Uuid, RefCell<Player>>,
+    players: BTreeMap<Uuid, Player>,
     kill_cooldown: Duration,
     pub rng: Pcg32,
     meeting: Option<Meeting>,
@@ -29,10 +28,10 @@ pub struct GameSettings {
 }
 
 impl Game {
-    fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
+    fn send_message_to_all_users(&mut self, msg: OutgoingWebsocketMessage) {
         self.players
-            .iter()
-            .for_each(|player| player.1.borrow().send_outgoing_message(msg.clone()))
+            .iter_mut()
+            .for_each(|player| player.1.send_outgoing_message(msg.clone()))
     }
     pub fn new(settings: GameSettings, seed: u64) -> Self {
         Game {
@@ -44,26 +43,23 @@ impl Game {
         }
     }
     pub fn alive_players(&self) -> u32 {
-        self.players
-            .iter()
-            .filter(|player| player.1.borrow().alive)
-            .count() as u32
+        self.players.iter().filter(|player| player.1.alive).count() as u32
     }
     pub fn crewmates_alive(&self) -> u32 {
         self.players
             .iter()
-            .filter(|player| player.1.borrow().role.unwrap() == Role::Crewmate)
-            .filter(|player| player.1.borrow().alive)
+            .filter(|player| player.1.role.unwrap() == Role::Crewmate)
+            .filter(|player| player.1.alive)
             .count() as u32
     }
     pub fn imposters_alive(&self) -> u32 {
         self.players
             .iter()
-            .filter(|player| match player.1.borrow().role.unwrap() {
+            .filter(|player| match player.1.role.unwrap() {
                 Role::Imposter(_) => true,
                 _ => false,
             })
-            .filter(|player| player.1.borrow().alive)
+            .filter(|player| player.1.alive)
             .count() as u32
     }
     pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
@@ -84,7 +80,7 @@ impl Game {
                         },
                     ));
                     if let Some(voted_out_user) = voted_out_user_option {
-                        let mut voted_out = self.players.get(&voted_out_user).unwrap().borrow_mut();
+                        let mut voted_out = self.players.get_mut(&voted_out_user).unwrap();
                         voted_out.alive = false;
                     }
                 }
@@ -104,7 +100,7 @@ impl Game {
             None
         }
     }
-    pub fn end_game_if_over(&self) {
+    pub fn end_game_if_over(&mut self) {
         match self.has_winner() {
             Some(winner) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
@@ -157,9 +153,8 @@ impl Game {
     }
     fn handle_report(&mut self, initiator: Uuid, corpse_id: Uuid, ctx: &mut Context<Self>) {
         {
-            let initiating_player = self.players.get(&initiator).unwrap().borrow();
-            let corpse = self.players.get(&corpse_id).unwrap().borrow();
-            if corpse.alive {
+            if self.players.get(&corpse_id).unwrap().alive {
+                let initiating_player = self.players.get_mut(&initiator).unwrap();
                 initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
                     "You cannot report this body, they are alive!".to_string(),
                 ));
@@ -173,56 +168,72 @@ impl Game {
         self.start_meeting(ctx);
     }
     fn handle_kill(&mut self, initiator: Uuid, target: Uuid) {
-        let mut initiating_player = self.players.get(&initiator).unwrap().borrow_mut();
-        let mut target_player = self.players.get(&target).unwrap().borrow_mut();
+        let potential_error_message = self.validate_kill_can_happen(initiator, target);
+        if let Some(error_message) = potential_error_message {
+            let initiating_player = self.players.get_mut(&initiator).unwrap();
+            initiating_player
+                .send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(error_message));
+            return;
+        }
+        let initiating_player = self.players.get_mut(&initiator).unwrap();
+        match initiating_player.role {
+                Some(Role::Imposter(imposter)) => {
+                    initiating_player.role = Some(Role::Imposter(imposter.reset_kill_cooldown()));
+                    initiating_player
+                        .send_outgoing_message(OutgoingWebsocketMessage::SuccessfulKill(()));
+                }
+                _ => unreachable!("We already validated that this kill can happen, which means the initiator is an imposter"),
+            }
+        let target_player = self.players.get_mut(&target).unwrap();
+        target_player.alive = false;
+        target_player.send_outgoing_message(OutgoingWebsocketMessage::PlayerDied(PlayerDied {
+            killer: initiator,
+        }));
+        println!(
+            "All killing has ended, the new game state is:\n {:#?}",
+            self
+        );
+    }
+
+    fn validate_kill_can_happen(&mut self, initiator: Uuid, target: Uuid) -> Option<String> {
+        let initiating_player = self.players.get(&initiator).unwrap();
         match initiating_player.role.unwrap() {
             Role::Imposter(ref mut imposter) => {
                 if !imposter.kill_is_off_cooldown() {
-                    initiating_player.send_outgoing_message(
-                        OutgoingWebsocketMessage::InvalidAction(format!(
-                            "You are not off kill cooldown yet. Try again in {:#?}",
-                            imposter.cooldown_remaining()
-                        )),
-                    );
-                    return;
+                    return Some(format!(
+                        "You are not off kill cooldown yet. Try again in {:#?}",
+                        imposter.cooldown_remaining()
+                    ));
                 }
+                let target_player = self.players.get(&target).unwrap();
                 match target_player.role.unwrap() {
                     Role::Crewmate => {
                         if !target_player.alive {
-                            initiating_player.send_outgoing_message(
-                                OutgoingWebsocketMessage::InvalidAction(format!(
-                                    "You cannot kill {} since they are already dead",
-                                    target_player.username
-                                )),
-                            );
-                            return;
+                            return Some(format!(
+                                "You cannot kill {} since they are already dead",
+                                target_player.username
+                            ));
                         }
-                        initiating_player.role =
-                            Some(Role::Imposter(imposter.reset_kill_cooldown()));
-                        target_player.alive = false;
-                        initiating_player
-                            .send_outgoing_message(OutgoingWebsocketMessage::SuccessfulKill(()));
-                        target_player.send_outgoing_message(OutgoingWebsocketMessage::PlayerDied(
-                            PlayerDied { killer: initiator },
-                        ));
-                        println!(
-                            "All killing has ended, the new game state is:\n {:#?}",
-                            self
-                        );
+                        return None;
                     }
-                    Role::Imposter(_) => initiating_player.send_outgoing_message(
-                        OutgoingWebsocketMessage::InvalidAction(
-                            "You cannot kill a fellow imposter, silly".to_string(),
-                        ),
-                    ),
+                    Role::Imposter(_) => {
+                        return Some("You cannot kill a fellow imposter, silly".to_string());
+                    }
                 }
             }
             _ => {
-                initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
+                return Some(
                     "Good try, but you can only kill people if you are an imposter!".to_string(),
-                ));
+                );
             }
         };
+    }
+    fn get_player_connection_status(&self, player_id: &Uuid) -> Option<PlayerConnectionStatus> {
+        let player = self.players.get(player_id)?;
+        Some(match player.has_connected_previously {
+            true => PlayerConnectionStatus::Reconnected,
+            false => PlayerConnectionStatus::New,
+        })
     }
 }
 
@@ -243,19 +254,12 @@ impl Handler<IncomingMessageInternal> for Game {
             }
             IncomingWebsocketMessage::ChooseColor(choose_color) => {
                 self.players
-                    .get(&msg.initiator)
+                    .get_mut(&msg.initiator)
                     .unwrap()
-                    .borrow_mut()
                     .set_color(choose_color.color.clone());
                 self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
                     PlayerStatus {
-                        username: self
-                            .players
-                            .get(&msg.initiator)
-                            .unwrap()
-                            .borrow()
-                            .username
-                            .clone(),
+                        username: self.players.get(&msg.initiator).unwrap().username.clone(),
                         id: msg.initiator.clone(),
                         color: choose_color.color,
                         status: PlayerConnectionStatus::Existing,
@@ -269,24 +273,23 @@ impl Handler<IncomingMessageInternal> for Game {
 impl Handler<GetPlayerColor> for Game {
     type Result = String;
     fn handle(&mut self, msg: GetPlayerColor, _ctx: &mut Self::Context) -> Self::Result {
-        self.players.get(&msg.id).unwrap().borrow().color.clone()
+        self.players.get(&msg.id).unwrap().color.clone()
     }
 }
 
 impl Handler<PlayerDisconnected> for Game {
     type Result = ();
     fn handle(&mut self, msg: PlayerDisconnected, _ctx: &mut Self::Context) -> Self::Result {
-        match self.players.get(&msg.id) {
+        match self.players.get_mut(&msg.id) {
             Some(player) => {
-                self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
-                    PlayerStatus {
-                        username: player.borrow().username.clone(),
-                        id: msg.id,
-                        color: player.borrow().color.clone(),
-                        status: PlayerConnectionStatus::Disconnected,
-                    },
-                ));
-                player.borrow_mut().close_websocket();
+                player.close_websocket();
+                let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                    username: player.username.clone(),
+                    id: msg.id,
+                    color: player.color.clone(),
+                    status: PlayerConnectionStatus::Disconnected,
+                });
+                self.send_message_to_all_users(player_status);
             }
             None => {
                 println!("Tried to remove player with id {:?}, but they had already been removed somewhere else", msg.id);
@@ -311,43 +314,21 @@ impl Handler<RegisterPlayer> for Game {
     fn handle(&mut self, msg: RegisterPlayer, _ctx: &mut Self::Context) -> Self::Result {
         let player = Player::new(&msg.name, msg.id);
         println!("Created player {:#?}", player);
-        self.players.insert(msg.id, RefCell::new(player));
+        self.players.insert(msg.id, player);
     }
 }
 
 impl Handler<RegisterPlayerWebsocket> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayerWebsocket, _ctx: &mut Self::Context) -> Self::Result {
-        let player_status = match self
-            .players
-            .get(&msg.id)
-            .expect("Tried to register websocket for a player that doesn't exist!")
-            .borrow()
-            .has_connected_previously
-        {
-            true => PlayerConnectionStatus::Reconnected,
-            false => PlayerConnectionStatus::New,
-        };
+        let player_status = self
+            .get_player_connection_status(&msg.id)
+            .expect("Cannot register player websocket for nonexistant player");
         self.players
             .get_mut(&msg.id)
-            .unwrap()
-            .borrow_mut()
+            .expect("Tried to register websocket for a player that doesn't exist!")
             .set_websocket_address(msg.websocket);
-        let player = self.players.get(&msg.id).unwrap().borrow();
-        self.players
-            .iter()
-            .filter(|existing_player| existing_player.1.borrow().id != player.borrow().id)
-            .for_each(|existing_player| {
-                let existing_player = existing_player.1.borrow();
-                player
-                    .borrow()
-                    .send_outgoing_message(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                        username: existing_player.username.clone(),
-                        id: existing_player.id,
-                        color: existing_player.color.clone(),
-                        status: PlayerConnectionStatus::Existing,
-                    }))
-            });
+        let player = self.players.get(&msg.id).unwrap();
         self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             username: player.username.clone(),
             id: player.id,
@@ -359,7 +340,7 @@ impl Handler<RegisterPlayerWebsocket> for Game {
 impl Handler<TellPlayerRole> for Game {
     type Result = ();
     fn handle(&mut self, msg: TellPlayerRole, _ctx: &mut Self::Context) -> Self::Result {
-        let player = self.players.get(&msg.id).unwrap().borrow();
+        let player = self.players.get(&msg.id).unwrap();
         let role = player.role.clone();
         if let Some(role) = role {
             let role_assignment = match role {
@@ -398,8 +379,8 @@ impl Handler<ResetGame> for Game {
         self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
             state: GameStateEnum::Reset,
         }));
-        for (_, player) in self.players.iter() {
-            player.borrow_mut().close_websocket();
+        for (_, player) in self.players.iter_mut() {
+            player.close_websocket();
         }
         self.players.clear();
     }
@@ -437,9 +418,8 @@ impl Handler<StartGame> for Game {
 
         player_roles.iter().for_each(|role| {
             self.players
-                .get(&role.0)
+                .get_mut(&role.0)
                 .unwrap()
-                .borrow_mut()
                 .set_role(*role.1, self.kill_cooldown)
         });
 
