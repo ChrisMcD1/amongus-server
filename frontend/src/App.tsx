@@ -17,6 +17,7 @@ import { store, history } from "./state/store";
 import Dashboard from "./Dashboard/Dashboard";
 import { setUserID } from "./state/userSlice";
 import ImposterVictory from "./InGame/ImposterVictory";
+import ErrorMessage from "./ErrorMessage";
 
 export default function App() {
     const [username, setUsername] = useState("");
@@ -58,29 +59,32 @@ export default function App() {
 
     return (
         <Provider store={store}>
-            <Router history={history}>
-                <Routes>
-                    <Route
-                        path="/lobby"
-                        element={<Lobby username={username} ws={ws} />}
-                    />
-                    <Route
-                        path="/"
-                        element={
-                            <Home
-                                username={username}
-                                setWs={setWs}
-                                setUsername={setUsername}
-                            />
-                        }
-                    />
-                    <Route path="/crewmate" element={<Crewmate username={username} />} />
-                    <Route path="/begin" element={<GameBegin username={username} />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/status-overview" element={<StatusOverview ws={ws} />} />
-                    <Route path="/imposter-victory" element={<ImposterVictory />} />
-                </Routes>
-            </Router>
+            <div>
+                <ErrorMessage />
+                <Router history={history}>
+                    <Routes>
+                        <Route
+                            path="/lobby"
+                            element={<Lobby username={username} ws={ws} />}
+                        />
+                        <Route
+                            path="/"
+                            element={
+                                <Home
+                                    username={username}
+                                    setWs={setWs}
+                                    setUsername={setUsername}
+                                />
+                            }
+                        />
+                        <Route path="/crewmate" element={<Crewmate username={username} />} />
+                        <Route path="/begin" element={<GameBegin username={username} />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/status-overview" element={<StatusOverview ws={ws} />} />
+                        <Route path="/imposter-victory" element={<ImposterVictory />} />
+                    </Routes>
+                </Router>
+            </div>
         </Provider>
     );
 }

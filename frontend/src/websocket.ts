@@ -1,7 +1,7 @@
 import { deleteAllPlayers, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
+import { showErrorMessage, hideErrorMessage } from './state/errorsSlice';
 import store from './state/store';
-import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner } from "./Messages/fromServer";
-import z from "zod";
+import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner, InvalidAction } from "./Messages/fromServer";
 import { selectCurrentPlayerID, setUserID } from './state/userSlice';
 import { push } from 'redux-first-history';
 
@@ -77,6 +77,14 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                     throw new Error("Unreachable");
                 }
             }
+            break;
+        }
+        case "InvalidAction": {
+            const invalidAction = InvalidAction.parse(parsed.content);
+            store.dispatch(showErrorMessage(invalidAction));
+            setTimeout(() => {
+                store.dispatch(hideErrorMessage())
+            }, 5000)
             break;
         }
         default: {

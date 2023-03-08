@@ -1,6 +1,7 @@
 import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit';
 import userReducer from './userSlice';
 import playersReducer from './playersSlice';
+import errorsReducer from './errorsSlice';
 import { createReduxHistoryContext } from 'redux-first-history';
 import { createBrowserHistory } from 'history';
 
@@ -13,6 +14,7 @@ export const store = configureStore({
         router: routerReducer,
         user: userReducer,
         players: playersReducer,
+        errors: errorsReducer,
     },
     middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(routerMiddleware),
 })

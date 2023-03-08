@@ -72,10 +72,10 @@ export const playersSlice = createSlice({
         },
         deleteAllPlayers: (state, _action: PayloadAction<void>) => {
             state.players = [];
-        }
+        },
     }
 })
 
-export const { updatePlayerStatus, setPlayerColor, deleteAllPlayers, setPlayerRole } = playersSlice.actions
+export const { updatePlayerStatus, setPlayerColor, deleteAllPlayers, setPlayerRole, } = playersSlice.actions
 
 export default playersSlice.reducer

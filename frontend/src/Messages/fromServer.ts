@@ -48,3 +48,5 @@ export const VotingResults = z.object({
     ejectedPlayer: z.string().nullable()
 })
 
+export const InvalidAction = z.string();
+
