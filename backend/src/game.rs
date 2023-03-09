@@ -152,19 +152,17 @@ impl Game {
         }
     }
     fn handle_report(&mut self, initiator: Uuid, corpse_id: Uuid, ctx: &mut Context<Self>) {
-        {
-            if self.players.get(&corpse_id).unwrap().alive {
-                let initiating_player = self.players.get_mut(&initiator).unwrap();
-                initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
-                    "You cannot report this body, they are alive!".to_string(),
-                ));
-                return;
-            }
-            self.send_message_to_all_users(OutgoingWebsocketMessage::BodyReported(BodyReported {
-                corpse: corpse_id,
-                initiator,
-            }));
+        if self.players.get(&corpse_id).unwrap().alive {
+            let initiating_player = self.players.get_mut(&initiator).unwrap();
+            initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
+                "You cannot report this body, they are alive!".to_string(),
+            ));
+            return;
         }
+        self.send_message_to_all_users(OutgoingWebsocketMessage::BodyReported(BodyReported {
+            corpse: corpse_id,
+            initiator,
+        }));
         self.start_meeting(ctx);
     }
     fn handle_kill(&mut self, initiator: Uuid, target: Uuid) {
@@ -252,6 +250,7 @@ impl Handler<IncomingMessageInternal> for Game {
             IncomingWebsocketMessage::Vote(vote) => {
                 self.handle_vote(msg.initiator, vote.target);
             }
+            IncomingWebsocketMessage::CallEmergencyMeeting() => {}
             IncomingWebsocketMessage::ChooseColor(choose_color) => {
                 self.players
                     .get_mut(&msg.initiator)
