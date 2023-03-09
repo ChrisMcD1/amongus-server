@@ -10,6 +10,7 @@ import {
     HistoryRouter as Router
 } from "redux-first-history/rr6";
 import StatusOverview from "./InGame/StatusOverview";
+import EmergencyButton from "./InGame/EmergencyButton";
 import { configureWebsocket } from "./websocket";
 import GameBegin from "./InGame/GameBegin";
 import { Provider } from "react-redux";
@@ -80,6 +81,7 @@ export default function App() {
                         <Route path="/crewmate" element={<Crewmate username={username} />} />
                         <Route path="/begin" element={<GameBegin username={username} />} />
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/emergency-button" element={<EmergencyButton />} />
                         <Route path="/status-overview" element={<StatusOverview ws={ws} />} />
                         <Route path="/imposter-victory" element={<ImposterVictory />} />
                     </Routes>
