@@ -165,6 +165,12 @@ impl Game {
         }));
         self.start_meeting(ctx);
     }
+    fn handle_emergency_meeting(&mut self, initiator: Uuid, ctx: &mut Context<Self>) {
+        self.send_message_to_all_users(OutgoingWebsocketMessage::EmergencyMeetingCalled(
+            EmergencyMeetingCalled { initiator },
+        ));
+        self.start_meeting(ctx)
+    }
     fn handle_kill(&mut self, initiator: Uuid, target: Uuid) {
         let potential_error_message = self.validate_kill_can_happen(initiator, target);
         if let Some(error_message) = potential_error_message {
@@ -250,7 +256,9 @@ impl Handler<IncomingMessageInternal> for Game {
             IncomingWebsocketMessage::Vote(vote) => {
                 self.handle_vote(msg.initiator, vote.target);
             }
-            IncomingWebsocketMessage::CallEmergencyMeeting() => {}
+            IncomingWebsocketMessage::CallEmergencyMeeting => {
+                self.handle_emergency_meeting(msg.initiator, ctx)
+            }
             IncomingWebsocketMessage::ChooseColor(choose_color) => {
                 self.players
                     .get_mut(&msg.initiator)

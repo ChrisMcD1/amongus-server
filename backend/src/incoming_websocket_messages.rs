@@ -11,6 +11,7 @@ pub enum IncomingWebsocketMessage {
     ReportBody(ReportBody),
     Vote(Vote),
     ChooseColor(ChooseColor),
+    CallEmergencyMeeting,
 }
 
 #[derive(Message, PartialEq, Debug, Deserialize, Serialize)]

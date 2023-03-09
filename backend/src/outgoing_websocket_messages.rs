@@ -16,6 +16,7 @@ pub enum OutgoingWebsocketMessage {
     SuccessfulKill(()),
     InvalidAction(String),
     BodyReported(BodyReported),
+    EmergencyMeetingCalled(EmergencyMeetingCalled),
     VotingResults(VotingResults),
     GameOver(Winner),
 }
@@ -87,6 +88,13 @@ pub struct PlayerDied {
 #[rtype(result = "()")]
 pub struct BodyReported {
     pub corpse: Uuid,
+    pub initiator: Uuid,
+}
+
+#[derive(Message, PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[rtype(result = "()")]
+pub struct EmergencyMeetingCalled {
     pub initiator: Uuid,
 }
 

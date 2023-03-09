@@ -24,6 +24,10 @@ export function createColorMessage(color: string) {
     });
 }
 
+export function createEmergencyMeetingMessage() {
+    return createMessage("CallEmergencyMeeting", undefined);
+}
+
 function createMessage(type: string, content: any) {
     return JSON.stringify({
         type,

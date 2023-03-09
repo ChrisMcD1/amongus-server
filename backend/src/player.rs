@@ -4,6 +4,7 @@ use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use actix::dev::*;
 use actix_web_actors::ws;
+use bytestring::ByteString;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
@@ -117,7 +118,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerWebsocket {
                 ctx.stop();
             }
             Ok(ws::Message::Nop) => {}
-            Ok(ws::Message::Text(s)) => self.handle_incoming_message(s.to_string(), ctx),
+            Ok(ws::Message::Text(s)) => self.handle_incoming_message(s, ctx),
 
             Err(e) => panic!("{}", e),
         }
@@ -161,7 +162,11 @@ impl PlayerWebsocket {
             ctx.ping(b"PING");
         });
     }
-    fn handle_incoming_message(&mut self, msg: String, ctx: &mut ws::WebsocketContext<Self>) {
+    fn handle_incoming_message(&mut self, msg: ByteString, ctx: &mut ws::WebsocketContext<Self>) {
+        println!(
+            "Received a message from the user {:?} of {:?}",
+            self.id, msg
+        );
         let msg = serde_json::from_str::<IncomingWebsocketMessage>(&msg);
         match msg {
             Ok(msg) => self.game.do_send(IncomingMessageInternal {
