@@ -128,6 +128,7 @@ impl Handler<PrintGameState> for Game {
 impl Handler<EndVoting> for Game {
     type Result = ();
     fn handle(&mut self, _msg: EndVoting, _ctx: &mut Self::Context) -> Self::Result {
+        println!("Someone sent an EndVoting Message");
         self.end_meeting();
     }
 }
