@@ -68,7 +68,8 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                     break;
                 }
                 case "crewmates": {
-                    throw new Error("Not implemented")
+                    store.dispatch(push("/crewmate-victory"))
+                    break;
                 }
                 default: {
                     throw new Error("Unreachable");

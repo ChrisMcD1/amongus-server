@@ -20,6 +20,7 @@ import { setUserID } from "./state/userSlice";
 import ImposterVictory from "./InGame/ImposterVictory";
 import ErrorMessage from "./ErrorMessage";
 import Meeting from "./InGame/Meeting";
+import CrewmateVictory from "./InGame/CrewmateVictory";
 
 export default function App() {
     const [username, setUsername] = useState("");
@@ -86,6 +87,7 @@ export default function App() {
                         <Route path="/meeting" element={<Meeting ws={ws} />} />
                         <Route path="/status-overview" element={<StatusOverview ws={ws} />} />
                         <Route path="/imposter-victory" element={<ImposterVictory />} />
+                        <Route path="/crewmate-victory" element={<CrewmateVictory />} />
                     </Routes>
                 </Router>
             </div>
