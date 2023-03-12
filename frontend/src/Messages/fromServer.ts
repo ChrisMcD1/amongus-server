@@ -23,9 +23,13 @@ export const ChatMessage = z.object({
 export const PlayerConnectionStatus = z.enum(["new", "disconnected", "reconnected", "existing"]);
 
 export const PlayerStatus = z.object({
-    username: z.string(),
-    color: z.string(),
-    id: z.string(),
+    player: z.object({
+        username: z.string(),
+        alive: z.boolean(),
+        color: z.string(),
+        hasConnectedPreviously: z.boolean(),
+        id: z.string(),
+    }),
     status: PlayerConnectionStatus
 })
 

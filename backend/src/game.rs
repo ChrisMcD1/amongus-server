@@ -108,6 +108,27 @@ impl Game {
             None => (),
         }
     }
+    pub fn update_player_with_game_status(&mut self, player_id: &Uuid) {
+        self.tell_player_about_others(player_id);
+    }
+    fn tell_player_about_others(&mut self, player_id: &Uuid) {
+        let existing_players_status: Vec<OutgoingWebsocketMessage> = self
+            .players
+            .iter()
+            .filter(|(_, existing_player)| existing_player.id != *player_id)
+            .map(|(_, existing_player)| {
+                return OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                    player: existing_player.clone(),
+                    status: PlayerConnectionStatus::Existing,
+                });
+            })
+            .collect();
+
+        let player = self.players.get_mut(player_id).unwrap();
+        for existing_status in existing_players_status.into_iter() {
+            player.send_outgoing_message(existing_status);
+        }
+    }
 }
 
 impl Actor for Game {
@@ -267,9 +288,7 @@ impl Handler<IncomingMessageInternal> for Game {
                     .set_color(choose_color.color.clone());
                 self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
                     PlayerStatus {
-                        username: self.players.get(&msg.initiator).unwrap().username.clone(),
-                        id: msg.initiator.clone(),
-                        color: choose_color.color,
+                        player: self.players.get(&msg.initiator).unwrap().clone(),
                         status: PlayerConnectionStatus::Existing,
                     },
                 ))
@@ -292,9 +311,7 @@ impl Handler<PlayerDisconnected> for Game {
             Some(player) => {
                 player.close_websocket();
                 let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                    username: player.username.clone(),
-                    id: msg.id,
-                    color: player.color.clone(),
+                    player: player.clone(),
                     status: PlayerConnectionStatus::Disconnected,
                 });
                 self.send_message_to_all_users(player_status);
@@ -336,31 +353,12 @@ impl Handler<RegisterPlayerWebsocket> for Game {
             .get_mut(&msg.id)
             .expect("Tried to register websocket for a player that doesn't exist!")
             .set_websocket_address(msg.websocket);
-        if let PlayerConnectionStatus::New = player_status {
-            let existing_players_status: Vec<OutgoingWebsocketMessage> = self
-                .players
-                .iter()
-                .filter(|(_, existing_player)| existing_player.id != msg.id)
-                .map(|(_, existing_player)| {
-                    return OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                        username: existing_player.username.clone(),
-                        id: existing_player.id,
-                        color: existing_player.color.clone(),
-                        status: PlayerConnectionStatus::Existing,
-                    });
-                })
-                .collect();
 
-            let player = self.players.get_mut(&msg.id).unwrap();
-            for existing_status in existing_players_status.into_iter() {
-                player.send_outgoing_message(existing_status);
-            }
-        }
+        self.update_player_with_game_status(&msg.id);
+
         let player = self.players.get_mut(&msg.id).unwrap();
         let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            username: player.username.clone(),
-            id: player.id,
-            color: player.color.clone(),
+            player: player.clone(),
             status: player_status,
         });
         self.send_message_to_all_users(player_status);

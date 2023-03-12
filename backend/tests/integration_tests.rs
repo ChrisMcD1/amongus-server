@@ -5,6 +5,7 @@ use among_us_server::config_app;
 use among_us_server::game::Game;
 use among_us_server::incoming_websocket_messages::*;
 use among_us_server::outgoing_websocket_messages::*;
+use among_us_server::player::Player;
 use awc::Client;
 use futures_util::{SinkExt as _, StreamExt as _};
 use test_fixtures::assert_connection_recieves_message;
@@ -38,7 +39,7 @@ async fn player_joins_game() {
     match join_message {
         OutgoingWebsocketMessage::PlayerStatus(status) => {
             assert_eq!(status.status, PlayerConnectionStatus::New);
-            assert_eq!(status.username, "Chris");
+            assert_eq!(status.player.username, "Chris");
         }
         _ => assert!(false, "Parsed to wrong thing"),
     }
@@ -130,14 +131,12 @@ async fn other_player_receives_disconnect() {
     let kate_join = test_fixtures::get_websocket_frame_data(kate_join_frame).unwrap();
 
     let kate_id = match kate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
         _ => unreachable!(),
     };
 
     let kate_disconnect = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-        username: "Kate".to_string(),
-        id: kate_id,
-        color: "#FFFFFF".to_string(),
+        player: Player::new("Kate", kate_id),
         status: PlayerConnectionStatus::Disconnected,
     });
     assert_connection_recieves_message(&mut chris_connection, kate_disconnect).await;
@@ -177,12 +176,12 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
         test_fixtures::get_websocket_frame_data(second_crewmate_join).unwrap();
 
     let crewmate_id = match crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
         _ => unreachable!(),
     };
 
     let second_crewmate_id = match second_crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
         _ => unreachable!(),
     };
 
@@ -243,12 +242,12 @@ async fn imposter_kills_sucessfully_and_ends_game() {
     let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
 
     let crewmate_id = match crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
         _ => unreachable!(),
     };
 
     let imposter_id = match imposter_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
         _ => unreachable!(),
     };
 
@@ -300,7 +299,7 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
     let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
 
     let imposter_id = match imposter_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
         _ => unreachable!(),
     };
 
@@ -354,7 +353,7 @@ async fn player_changes_color() {
     let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
 
     let player_id = match join_message {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
+        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
         _ => unreachable!(),
     };
 
@@ -468,6 +467,21 @@ mod test_fixtures {
         {
             if message == desired_message {
                 return;
+            }
+            match (&message, &desired_message) {
+                (
+                    OutgoingWebsocketMessage::PlayerStatus(player_status),
+                    OutgoingWebsocketMessage::PlayerStatus(desired_player_status),
+                ) => {
+                    if player_status.player.username == desired_player_status.player.username
+                        && player_status.player.id == desired_player_status.player.id
+                        && player_status.player.color == desired_player_status.player.color
+                        && player_status.status == desired_player_status.status
+                    {
+                        return;
+                    }
+                }
+                _ => {}
             }
         }
         assert!(

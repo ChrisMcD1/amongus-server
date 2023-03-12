@@ -5,6 +5,8 @@ use crate::outgoing_websocket_messages::*;
 use actix::dev::*;
 use actix_web_actors::ws;
 use bytestring::ByteString;
+use serde::Deserialize;
+use serde::Serialize;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
@@ -12,14 +14,16 @@ use uuid::Uuid;
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Player {
+    #[serde(skip_serializing, skip_deserializing)]
     pub role: Option<Role>,
     pub username: String,
     pub alive: bool,
     pub color: String,
     pub has_connected_previously: bool,
     pub id: Uuid,
+    #[serde(skip_serializing, skip_deserializing)]
     pub websocket: Option<Addr<PlayerWebsocket>>,
 }
 

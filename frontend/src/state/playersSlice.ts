@@ -45,16 +45,19 @@ export const playersSlice = createSlice({
     reducers: {
         updatePlayerStatus: (state, action: PayloadAction<z.infer<typeof PlayerStatus>>) => {
             const payload = action.payload;
-            const existingPlayer = state.players.find(player => player.id === payload.id);
+            const existingPlayer = state.players.find(player => player.id === payload.player.id);
             if (existingPlayer == null) {
                 state.players.push({
                     role: null,
-                    alive: true,
-                    ...payload,
+                    ...payload.player,
                 })
             } else {
-                existingPlayer.color = payload.color;
-                existingPlayer.username = payload.username;
+                for (const [key, value] of Object.entries(payload.player)) {
+                    if (key in existingPlayer) {
+                        //@ts-ignore
+                        existingPlayer[key] = value;
+                    }
+                }
             }
         },
         setPlayerRole: (state, action: PayloadAction<SetPlayerRolePayload>) => {
