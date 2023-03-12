@@ -522,7 +522,7 @@ impl Meeting {
             == self.alive_player_count
     }
     pub fn person_voted_out(&self) -> Option<Uuid> {
-        let vote_threshold = (f64::from(self.alive_player_count) / 2f64).ceil() as u32;
+        let vote_threshold = (f64::from(self.alive_player_count) / 2f64).floor() as u32 + 1;
         let mut votes_for_each: BTreeMap<Uuid, u32> = BTreeMap::new();
         for vote in self.votes.iter() {
             let vote_for_option = vote.1;

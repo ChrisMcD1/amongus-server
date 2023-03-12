@@ -60,3 +60,16 @@ fn skip_vote_still_kills() {
 
     assert_eq!(voted_out_user, Some(user_2));
 }
+
+#[test]
+fn meeting_between_2_inconclusive() {
+    let user_1 = Uuid::from_u128(1);
+    let user_2 = Uuid::from_u128(2);
+    let mut meeting = Meeting::new(2);
+
+    meeting.add_vote(user_1, None);
+    meeting.add_vote(user_2, Some(user_1));
+    let voted_out_user = meeting.person_voted_out();
+
+    assert_eq!(voted_out_user, None);
+}
