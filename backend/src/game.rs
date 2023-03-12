@@ -129,6 +129,7 @@ impl Game {
             player.send_outgoing_message(existing_status);
         }
     }
+    }
 }
 
 impl Actor for Game {
@@ -362,26 +363,6 @@ impl Handler<RegisterPlayerWebsocket> for Game {
             status: player_status,
         });
         self.send_message_to_all_users(player_status);
-    }
-}
-impl Handler<TellPlayerRole> for Game {
-    type Result = ();
-    fn handle(&mut self, msg: TellPlayerRole, _ctx: &mut Self::Context) -> Self::Result {
-        let player = self.players.get(&msg.id).unwrap();
-        let role = player.role.clone();
-        if let Some(role) = role {
-            let role_assignment = match role {
-                Role::Imposter(_) => RoleAssignment::Imposter,
-                Role::Crewmate => RoleAssignment::Crewmate,
-            };
-            player
-                .websocket
-                .as_ref()
-                .unwrap()
-                .do_send(OutgoingWebsocketMessage::PlayerRole(SetRole {
-                    role: role_assignment,
-                }))
-        }
     }
 }
 
