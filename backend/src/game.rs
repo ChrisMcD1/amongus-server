@@ -33,6 +33,16 @@ impl Game {
             .iter_mut()
             .for_each(|player| player.1.send_outgoing_message(msg.clone()))
     }
+    fn send_message_to_all_users_except(
+        &mut self,
+        msg: OutgoingWebsocketMessage,
+        excluded_player: &Uuid,
+    ) {
+        self.players
+            .iter_mut()
+            .filter(|player| player.1.id != *excluded_player)
+            .for_each(|player| player.1.send_outgoing_message(msg.clone()))
+    }
     pub fn new(settings: GameSettings, seed: u64) -> Self {
         Game {
             state: GameStateEnum::Lobby,
@@ -130,26 +140,34 @@ impl Game {
             }
         }
     }
-    pub fn notify_others_about_this_player(
-        &mut self,
-        player_id: &Uuid,
-        player_status: PlayerConnectionStatus,
-    ) {
+    pub fn notify_others_about_this_player(&mut self, player_id: &Uuid) {
+        let player_status = self.get_player_connection_status(&player_id).unwrap();
         let player = self.players.get_mut(player_id).unwrap();
+        let player_id = player.id.clone();
         let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
             player: player.clone(),
             status: player_status,
         });
-        self.send_message_to_all_users(player_status);
+        self.send_message_to_all_users_except(player_status, &player_id);
     }
-    pub fn notify_player_with_game_status(&mut self, player_id: &Uuid) {
+    pub fn notify_player_with_all_info(&mut self, player_id: &Uuid) {
+        self.tell_player_about_themselves(player_id);
         self.tell_player_about_others(player_id);
         self.tell_player_about_roles(player_id);
+        self.tell_player_about_game_state(player_id);
+    }
+    fn tell_player_about_themselves(&mut self, player_id: &Uuid) {
+        let status = self
+            .get_player_connection_status(player_id)
+            .unwrap()
+            .clone();
         let player = self.players.get_mut(player_id).unwrap();
-        player.send_outgoing_message(OutgoingWebsocketMessage::GameState(GameState {
-            state: self.state.clone(),
+        player.send_outgoing_message(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+            player: player.clone(),
+            status,
         }));
     }
+
     fn tell_player_about_others(&mut self, player_id: &Uuid) {
         let existing_players_status: Vec<OutgoingWebsocketMessage> = self
             .players
@@ -190,6 +208,12 @@ impl Game {
                 }
             }
         }
+    }
+    fn tell_player_about_game_state(&mut self, player_id: &Uuid) {
+        let player = self.players.get_mut(player_id).unwrap();
+        player.send_outgoing_message(OutgoingWebsocketMessage::GameState(GameState {
+            state: self.state.clone(),
+        }));
     }
 }
 
@@ -419,16 +443,20 @@ impl Handler<RegisterPlayerWebsocket> for Game {
                 format!("{:?}", msg.id)
             )
         }
-        let player_status = self.get_player_connection_status(&msg.id).unwrap();
 
         self.players
             .get_mut(&msg.id)
             .unwrap()
             .set_websocket_address(msg.websocket);
 
-        self.notify_player_with_game_status(&msg.id);
+        self.notify_player_with_all_info(&msg.id);
 
-        self.notify_others_about_this_player(&msg.id, player_status);
+        self.notify_others_about_this_player(&msg.id);
+
+        self.players
+            .get_mut(&msg.id)
+            .unwrap()
+            .finish_player_connection();
     }
 }
 

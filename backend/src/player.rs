@@ -54,6 +54,8 @@ impl Player {
     }
     pub fn set_websocket_address(&mut self, websocket: Addr<PlayerWebsocket>) {
         self.websocket = Some(websocket);
+    }
+    pub fn finish_player_connection(&mut self) {
         self.has_connected_previously = true;
     }
     pub fn send_outgoing_message(&mut self, msg: OutgoingWebsocketMessage) {

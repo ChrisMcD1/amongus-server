@@ -32,7 +32,6 @@ async fn player_joins_game() {
         .unwrap();
 
     let _assigned_id_frame = connection.next().await.unwrap().unwrap();
-    let _game_state_lobby = connection.next().await.unwrap().unwrap();
     let join_message_frame = connection.next().await.unwrap().unwrap();
 
     let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();

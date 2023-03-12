@@ -1,8 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from './store'
+import z from "zod";
+import { BodyReported } from '../Messages/fromServer';
 
 type MeetingState = {
     initiator: string,
+    reportedBodyID: string | null
 }
 
 export function selectMeetingInitiator(store: RootState) {
@@ -11,6 +14,7 @@ export function selectMeetingInitiator(store: RootState) {
 
 const initialState: MeetingState = {
     initiator: '',
+    reportedBodyID: null,
 }
 
 export const meetingSlice = createSlice({
@@ -20,10 +24,14 @@ export const meetingSlice = createSlice({
         beginEmergencyMeeting: (state, action: PayloadAction<string>) => {
             state.initiator = action.payload
         },
+        beginReportedBodyMeeting: (state, action: PayloadAction<z.infer<typeof BodyReported>>) => {
+            state.initiator = action.payload.initiator;
+            state.reportedBodyID = action.payload.corpse;
+        },
     }
 })
 
 
-export const { beginEmergencyMeeting } = meetingSlice.actions
+export const { beginEmergencyMeeting, beginReportedBodyMeeting } = meetingSlice.actions
 
 export default meetingSlice.reducer

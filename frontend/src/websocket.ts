@@ -1,10 +1,10 @@
 import { deleteAllPlayers, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
 import { showErrorMessage, hideErrorMessage } from './state/errorsSlice';
 import store from './state/store';
-import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner, InvalidAction, EmergencyMeetingCalled } from "./Messages/fromServer";
+import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner, InvalidAction, EmergencyMeetingCalled, BodyReported } from "./Messages/fromServer";
 import { setUserID } from './state/userSlice';
 import { push } from 'redux-first-history';
-import { beginEmergencyMeeting } from './state/meetingSlice';
+import { beginEmergencyMeeting, beginReportedBodyMeeting } from './state/meetingSlice';
 
 
 export function configureWebsocket(ws: WebSocket): WebSocket {
@@ -88,6 +88,12 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
         case "EmergencyMeetingCalled": {
             const emergencyMeetingCalled = EmergencyMeetingCalled.parse(parsed.content);
             store.dispatch(beginEmergencyMeeting(emergencyMeetingCalled.initiator));
+            store.dispatch(push("/meeting"));
+            break;
+        }
+        case "BodyReported": {
+            const bodyReported = BodyReported.parse(parsed.content);
+            store.dispatch(beginReportedBodyMeeting(bodyReported));
             store.dispatch(push("/meeting"));
             break;
         }
