@@ -122,6 +122,10 @@ impl Game {
     pub fn update_player_with_game_status(&mut self, player_id: &Uuid) {
         self.tell_player_about_others(player_id);
         self.tell_player_about_roles(player_id);
+        let player = self.players.get_mut(player_id).unwrap();
+        player.send_outgoing_message(OutgoingWebsocketMessage::GameState(GameState {
+            state: self.state.clone(),
+        }));
     }
     fn tell_player_about_others(&mut self, player_id: &Uuid) {
         let existing_players_status: Vec<OutgoingWebsocketMessage> = self
