@@ -21,7 +21,6 @@ pub struct Player {
     pub has_connected_previously: bool,
     pub id: Uuid,
     pub websocket: Option<Addr<PlayerWebsocket>>,
-    pub previously_sent_messages: Vec<OutgoingWebsocketMessage>,
 }
 
 impl Player {
@@ -34,7 +33,6 @@ impl Player {
             has_connected_previously: false,
             id,
             websocket: None,
-            previously_sent_messages: vec![],
         }
     }
     pub fn close_websocket(&mut self) {
@@ -53,13 +51,7 @@ impl Player {
         self.websocket = Some(websocket);
         self.has_connected_previously = true;
     }
-    pub fn send_all_previous_messages(&self) {
-        for msg in self.previously_sent_messages.iter() {
-            self.send_websocket_message_internal(msg.clone());
-        }
-    }
     pub fn send_outgoing_message(&mut self, msg: OutgoingWebsocketMessage) {
-        self.previously_sent_messages.push(msg.clone());
         self.send_websocket_message_internal(msg);
     }
     fn send_websocket_message_internal(&self, msg: OutgoingWebsocketMessage) {

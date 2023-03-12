@@ -363,7 +363,6 @@ impl Handler<RegisterPlayerWebsocket> for Game {
             color: player.color.clone(),
             status: player_status,
         });
-        player.send_all_previous_messages();
         self.send_message_to_all_users(player_status);
     }
 }
