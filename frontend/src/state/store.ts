@@ -1,5 +1,6 @@
 import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit';
 import userReducer from './userSlice';
+import meetingReducer from './meetingSlice';
 import playersReducer from './playersSlice';
 import errorsReducer from './errorsSlice';
 import { createReduxHistoryContext } from 'redux-first-history';
@@ -13,6 +14,7 @@ export const store = configureStore({
     reducer: {
         router: routerReducer,
         user: userReducer,
+        meeting: meetingReducer,
         players: playersReducer,
         errors: errorsReducer,
     },

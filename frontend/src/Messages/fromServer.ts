@@ -4,7 +4,15 @@ export type PreZodMessage = {
     type: "ChatMessage" |
     "AssignedID" |
     "PlayerStatus" |
-    "GameState" | "PlayerRole" | "PlayerDied" | "SuccessfulKill" | "InvalidAction" | "BodyReported" | "VotingResults" | "GameOver";
+    "GameState" |
+    "PlayerRole" |
+    "PlayerDied" |
+    "SuccessfulKill" |
+    "InvalidAction" |
+    "BodyReported" |
+    "EmergencyMeetingCalled" |
+    "VotingResults" |
+    "GameOver";
     content: any;
 }
 
@@ -39,6 +47,10 @@ export const PlayerDied = z.object({
 
 export const BodyReported = z.object({
     corpse: z.string(),
+    initiator: z.string()
+})
+
+export const EmergencyMeetingCalled = z.object({
     initiator: z.string()
 })
 

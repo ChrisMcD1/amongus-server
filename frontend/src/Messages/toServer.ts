@@ -12,7 +12,7 @@ export function createKillPlayerMessage(targetID: string) {
     })
 }
 
-export function createVoteMessage(targetID: string) {
+export function createVoteMessage(targetID: string | null) {
     return createMessage("Vote", {
         target: targetID
     })

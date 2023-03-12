@@ -28,6 +28,7 @@ export function selectCurrentPlayer(store: RootState) {
     return store.players.players.find(player => player.id === store.user.id);
 }
 
+
 export type SetPlayerRolePayload = {
     role: z.infer<typeof RoleAssignment>,
     id: string

@@ -1,9 +1,9 @@
-import PlayerTile from "./PlayerTile";
 import ImposterAbilities from "./ImposterAbilities";
 import { useAppSelector } from "../hooks";
 import { selectCurrentPlayer, selectOtherPlayers } from "../state/playersSlice";
 import { useState } from "react";
 import { createEmergencyMeetingMessage } from "../Messages/toServer";
+import PlayerTileArray from "./PlayerTileArray";
 
 type StatusOverviewProps = { ws: WebSocket | undefined };
 
@@ -19,18 +19,7 @@ function StatusOverview(props: StatusOverviewProps) {
             <button onClick={callEmergencyMeeting}>
                 Call Emergency Meeting!
             </button>
-            <div>
-                <div className="justify-left flex flex-wrap place-content-center">
-                    {otherPlayers.map((player) => {
-                        return (
-                            <div key={player.id} onClick={() => setSelectedPlayerID(player.id)}>
-                                <PlayerTile  {...player} />
-                            </div>
-                        )
-                    })}
-
-                </div>
-            </div>
+            <PlayerTileArray players={otherPlayers} setSelectedPlayerID={setSelectedPlayerID} selectedPlayerID={selectedPlayerID} />
             {currentPlayer?.role === "imposter" && <ImposterAbilities selectedPlayerID={selectedPlayerID} ws={props.ws} />}
         </div >
     );

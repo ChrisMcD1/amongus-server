@@ -19,6 +19,7 @@ import Dashboard from "./Dashboard/Dashboard";
 import { setUserID } from "./state/userSlice";
 import ImposterVictory from "./InGame/ImposterVictory";
 import ErrorMessage from "./ErrorMessage";
+import Meeting from "./InGame/Meeting";
 
 export default function App() {
     const [username, setUsername] = useState("");
@@ -82,6 +83,7 @@ export default function App() {
                         <Route path="/begin" element={<GameBegin username={username} />} />
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/emergency-button" element={<EmergencyButton />} />
+                        <Route path="/meeting" element={<Meeting ws={ws} />} />
                         <Route path="/status-overview" element={<StatusOverview ws={ws} />} />
                         <Route path="/imposter-victory" element={<ImposterVictory />} />
                     </Routes>
