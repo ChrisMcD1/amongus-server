@@ -8,8 +8,7 @@ export default function PlayerTile(props: Player) {
                 className="mx-auto h-20 w-20 rounded-full"
             ></div>
 
-            <div>{props.username}</div>
-            <div>{props.alive ? "I'm alive" : "I'm dead"}</div>
+            <div style={props.alive ? { color: 'white' } : { color: 'red' }}>{props.username}</div>
         </div>
     );
 }
