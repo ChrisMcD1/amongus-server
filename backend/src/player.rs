@@ -74,7 +74,10 @@ impl Player {
             RoleAssignment::Crewmate => Role::Crewmate,
             RoleAssignment::Imposter => Role::Imposter(Imposter::new(kill_cooldown)),
         });
-        self.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole { role }));
+        self.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole {
+            role,
+            id: self.id,
+        }));
     }
     pub fn set_color(&mut self, color: String) {
         self.color = color;

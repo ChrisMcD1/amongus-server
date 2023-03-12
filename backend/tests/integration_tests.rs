@@ -57,7 +57,9 @@ async fn one_player_assigned_imposter() {
 
     let _ = server.post("/start-game").send().await;
 
-    let _player_join = connection.next().await;
+    let _player_assigned_id = connection.next().await.unwrap().unwrap();
+    let player_join_frame = connection.next().await.unwrap().unwrap();
+    let player_id = test_fixtures::get_player_id_from_status_frame(player_join_frame);
 
     let game_started = OutgoingWebsocketMessage::GameState(GameState {
         state: GameStateEnum::InGame,
@@ -65,6 +67,7 @@ async fn one_player_assigned_imposter() {
 
     let assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
         role: RoleAssignment::Imposter,
+        id: player_id,
     });
 
     assert_connection_recieves_message(&mut connection, assigned_imposter).await;
@@ -89,17 +92,21 @@ async fn one_player_each_role() {
 
     let _ = server.post("/start-game").send().await;
 
-    let _chris_join = chris_connection.next().await;
-    let _kate_join = chris_connection.next().await;
+    let _chris_assigned_id = chris_connection.next().await.unwrap().unwrap();
+    let chris_join_frame = chris_connection.next().await.unwrap().unwrap();
+    let kate_join_frame = chris_connection.next().await.unwrap().unwrap();
 
-    let _kate_join = kate_connection.next().await;
+    let chris_id = test_fixtures::get_player_id_from_status_frame(chris_join_frame);
+    let kate_id = test_fixtures::get_player_id_from_status_frame(kate_join_frame);
 
     let chris_assigned_crewmate = OutgoingWebsocketMessage::PlayerRole(SetRole {
         role: RoleAssignment::Crewmate,
+        id: chris_id,
     });
 
     let kate_assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
         role: RoleAssignment::Imposter,
+        id: kate_id,
     });
 
     assert_connection_recieves_message(&mut chris_connection, chris_assigned_crewmate).await;
@@ -128,12 +135,7 @@ async fn other_player_receives_disconnect() {
     let _chris_join = chris_connection.next().await;
 
     let kate_join_frame = chris_connection.next().await.unwrap().unwrap();
-    let kate_join = test_fixtures::get_websocket_frame_data(kate_join_frame).unwrap();
-
-    let kate_id = match kate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
-        _ => unreachable!(),
-    };
+    let kate_id = test_fixtures::get_player_id_from_status_frame(kate_join_frame);
 
     let kate_disconnect = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
         player: Player::new("Kate", kate_id),
@@ -171,19 +173,8 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
     let _imposter_join = crewmate_connection.next().await.unwrap().unwrap();
     let second_crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
 
-    let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
-    let second_crewmate_join =
-        test_fixtures::get_websocket_frame_data(second_crewmate_join).unwrap();
-
-    let crewmate_id = match crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
-        _ => unreachable!(),
-    };
-
-    let second_crewmate_id = match second_crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
-        _ => unreachable!(),
-    };
+    let crewmate_id = test_fixtures::get_player_id_from_status_frame(crewmate_join);
+    let second_crewmate_id = test_fixtures::get_player_id_from_status_frame(second_crewmate_join);
 
     imposter_connection
         .send(awc::ws::Message::Text(
@@ -238,18 +229,8 @@ async fn imposter_kills_sucessfully_and_ends_game() {
     let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
     let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
 
-    let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
-    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
-
-    let crewmate_id = match crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
-        _ => unreachable!(),
-    };
-
-    let imposter_id = match imposter_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
-        _ => unreachable!(),
-    };
+    let crewmate_id = test_fixtures::get_player_id_from_status_frame(crewmate_join);
+    let imposter_id = test_fixtures::get_player_id_from_status_frame(imposter_join);
 
     imposter_connection
         .send(awc::ws::Message::Text(
@@ -295,13 +276,7 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
     let _crewmate_assigned_id = crewmate_connection.next().await.unwrap().unwrap();
     let _crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
     let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-
-    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
-
-    let imposter_id = match imposter_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
-        _ => unreachable!(),
-    };
+    let imposter_id = test_fixtures::get_player_id_from_status_frame(imposter_join);
 
     let _ = server.post("/start-meeting").send().await;
 
@@ -350,12 +325,8 @@ async fn player_changes_color() {
     let _assigned_id_frame = connection.next().await.unwrap().unwrap();
 
     let join_message_frame = connection.next().await.unwrap().unwrap();
-    let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
 
-    let player_id = match join_message {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
-        _ => unreachable!(),
-    };
+    let player_id = test_fixtures::get_player_id_from_status_frame(join_message_frame);
 
     let route = format!("get-player-color?id={player_id}");
     println!("the route is {route}");
@@ -427,6 +398,7 @@ mod test_fixtures {
     use awc::BoxedSocket;
     use std::string::String;
     use std::time::Duration;
+    use uuid::Uuid;
 
     use super::*;
 
@@ -457,6 +429,19 @@ mod test_fixtures {
             }
             _ => return None,
         }
+    }
+    pub fn get_player_id_from_status_frame(join_frame: Frame) -> Uuid {
+        let join_message = test_fixtures::get_websocket_frame_data(join_frame).unwrap();
+
+        let id = match join_message {
+            OutgoingWebsocketMessage::PlayerStatus(status) => status.player.id,
+            _ => unreachable!(
+                "Expected to get a player id but a got this message {}",
+                format!("{:?}", join_message)
+            ),
+        };
+
+        return id;
     }
     pub async fn assert_connection_recieves_message(
         connection: &mut Framed<BoxedSocket, Codec>,

@@ -42,7 +42,8 @@ export const GameState = z.object({
 export const RoleAssignment = z.enum(["imposter", "crewmate"]);
 
 export const SetRole = z.object({
-    role: RoleAssignment
+    role: RoleAssignment,
+    id: z.string(),
 })
 
 export const PlayerDied = z.object({

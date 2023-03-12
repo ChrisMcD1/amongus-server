@@ -74,6 +74,7 @@ pub enum RoleAssignment {
 #[rtype(result = "()")]
 pub struct SetRole {
     pub role: RoleAssignment,
+    pub id: Uuid,
 }
 
 #[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]

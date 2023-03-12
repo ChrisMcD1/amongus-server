@@ -2,7 +2,7 @@ import { deleteAllPlayers, setPlayerRole, updatePlayerStatus } from './state/pla
 import { showErrorMessage, hideErrorMessage } from './state/errorsSlice';
 import store from './state/store';
 import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner, InvalidAction, EmergencyMeetingCalled } from "./Messages/fromServer";
-import { selectCurrentPlayerID, setUserID } from './state/userSlice';
+import { setUserID } from './state/userSlice';
 import { push } from 'redux-first-history';
 import { beginEmergencyMeeting } from './state/meetingSlice';
 
@@ -25,12 +25,8 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
             break;
         }
         case "PlayerRole": {
-            let currentPlayerID = selectCurrentPlayerID(store.getState());
             let playerRole = SetRole.parse(parsed.content);
-            store.dispatch(setPlayerRole({
-                id: currentPlayerID,
-                role: playerRole.role
-            }))
+            store.dispatch(setPlayerRole(playerRole))
             break;
         }
         case "AssignedID": {

@@ -62,6 +62,17 @@ impl Game {
             .filter(|player| player.1.alive)
             .count() as u32
     }
+    pub fn get_imposters(&self) -> Vec<Player> {
+        self.players
+            .clone()
+            .into_iter()
+            .map(|player| player.1)
+            .filter(|player| match player.role {
+                Some(Role::Imposter(_)) => true,
+                _ => false,
+            })
+            .collect()
+    }
     pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
         self.meeting = Some(Meeting::new(self.alive_players()));
         println!("Started meeting as {:?}", self.meeting);
@@ -110,6 +121,7 @@ impl Game {
     }
     pub fn update_player_with_game_status(&mut self, player_id: &Uuid) {
         self.tell_player_about_others(player_id);
+        self.tell_player_about_roles(player_id);
     }
     fn tell_player_about_others(&mut self, player_id: &Uuid) {
         let existing_players_status: Vec<OutgoingWebsocketMessage> = self
@@ -129,6 +141,28 @@ impl Game {
             player.send_outgoing_message(existing_status);
         }
     }
+    fn tell_player_about_roles(&mut self, player_id: &Uuid) {
+        let other_imposters = self.get_imposters();
+        let player = self.players.get_mut(player_id).unwrap();
+        let role = player.role.clone();
+        if let Some(role) = role {
+            let role_assignment = match role {
+                Role::Imposter(_) => RoleAssignment::Imposter,
+                Role::Crewmate => RoleAssignment::Crewmate,
+            };
+            player.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole {
+                role: role_assignment,
+                id: player.id,
+            }));
+            if let Role::Imposter(_) = role {
+                for imposter in other_imposters {
+                    player.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole {
+                        role: RoleAssignment::Imposter,
+                        id: imposter.id,
+                    }))
+                }
+            }
+        }
     }
 }
 
