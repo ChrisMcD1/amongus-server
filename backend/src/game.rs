@@ -141,7 +141,7 @@ impl Handler<StartMeeting> for Game {
 }
 
 impl Game {
-    fn handle_vote(&mut self, initiator: Uuid, target: Uuid) {
+    fn handle_vote(&mut self, initiator: Uuid, target: Option<Uuid>) {
         match self.meeting.as_mut() {
             Some(meeting) => {
                 meeting.add_vote(initiator, target);
@@ -472,7 +472,7 @@ fn get_imposter_count(player_count: usize) -> usize {
 #[derive(Debug)]
 pub struct Meeting {
     alive_player_count: u32,
-    votes: BTreeMap<Uuid, Uuid>,
+    votes: BTreeMap<Uuid, Option<Uuid>>,
 }
 
 impl Meeting {
@@ -482,7 +482,7 @@ impl Meeting {
             votes: BTreeMap::new(),
         }
     }
-    pub fn add_vote(&mut self, vote_by: Uuid, vote_for: Uuid) {
+    pub fn add_vote(&mut self, vote_by: Uuid, vote_for: Option<Uuid>) {
         self.votes.insert(vote_by, vote_for);
     }
     pub fn all_players_voted(&self) -> bool {
@@ -493,11 +493,13 @@ impl Meeting {
         let vote_threshold = (f64::from(self.alive_player_count) / 2f64).ceil() as u32;
         let mut votes_for_each: BTreeMap<Uuid, u32> = BTreeMap::new();
         for vote in self.votes.iter() {
-            let vote_for = vote.1;
-            match votes_for_each.get(vote_for) {
-                Some(votes) => votes_for_each.insert(*vote_for, votes + 1),
-                None => votes_for_each.insert(*vote_for, 1),
-            };
+            let vote_for_option = vote.1;
+            if let Some(vote_for) = vote_for_option {
+                match votes_for_each.get(vote_for) {
+                    Some(votes) => votes_for_each.insert(*vote_for, votes + 1),
+                    None => votes_for_each.insert(*vote_for, 1),
+                };
+            }
         }
         let highest_person_votes = votes_for_each.iter().reduce(|accum, item| {
             if item.1 > accum.1 {

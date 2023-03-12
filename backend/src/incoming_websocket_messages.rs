@@ -32,7 +32,7 @@ pub struct KillPlayer {
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct Vote {
-    pub target: Uuid,
+    pub target: Option<Uuid>,
 }
 
 #[derive(Message, PartialEq, Debug, Deserialize, Serialize)]

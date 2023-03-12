@@ -309,7 +309,7 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
     crewmate_connection
         .send(awc::ws::Message::Text(
             serde_json::to_string(&IncomingWebsocketMessage::Vote(Vote {
-                target: imposter_id,
+                target: Some(imposter_id),
             }))
             .unwrap()
             .into(),
@@ -320,7 +320,7 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
     imposter_connection
         .send(awc::ws::Message::Text(
             serde_json::to_string(&IncomingWebsocketMessage::Vote(Vote {
-                target: imposter_id,
+                target: Some(imposter_id),
             }))
             .unwrap()
             .into(),
