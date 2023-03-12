@@ -94,13 +94,13 @@ impl Game {
                         let mut voted_out = self.players.get_mut(&voted_out_user).unwrap();
                         voted_out.alive = false;
                     }
+                    self.notify_players_of_next_state();
                 }
                 None => {
                     println!("Received Message to end meeting, but it has already ended!")
                 }
             }
         }
-        self.end_game_if_over();
     }
     pub fn has_winner(&self) -> Option<Winner> {
         if self.crewmates_alive() == 0 {
@@ -111,15 +111,31 @@ impl Game {
             None
         }
     }
-    pub fn end_game_if_over(&mut self) {
+    pub fn notify_players_of_next_state(&mut self) {
         match self.has_winner() {
             Some(winner) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
             }
-            None => (),
+            None => {
+                self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
+                    state: GameStateEnum::InGame,
+                }))
+            }
         }
     }
-    pub fn update_player_with_game_status(&mut self, player_id: &Uuid) {
+    pub fn notify_others_about_this_player(
+        &mut self,
+        player_id: &Uuid,
+        player_status: PlayerConnectionStatus,
+    ) {
+        let player = self.players.get_mut(player_id).unwrap();
+        let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+            player: player.clone(),
+            status: player_status,
+        });
+        self.send_message_to_all_users(player_status);
+    }
+    pub fn notify_player_with_game_status(&mut self, player_id: &Uuid) {
         self.tell_player_about_others(player_id);
         self.tell_player_about_roles(player_id);
         let player = self.players.get_mut(player_id).unwrap();
@@ -309,7 +325,7 @@ impl Handler<IncomingMessageInternal> for Game {
         match msg.incoming {
             IncomingWebsocketMessage::KillPlayer(kill) => {
                 self.handle_kill(msg.initiator, kill.target);
-                self.end_game_if_over();
+                self.notify_players_of_next_state();
             }
             IncomingWebsocketMessage::ReportBody(report) => {
                 self.handle_report(msg.initiator, report.corpse, ctx);
@@ -385,22 +401,22 @@ impl Handler<RegisterPlayer> for Game {
 impl Handler<RegisterPlayerWebsocket> for Game {
     type Result = ();
     fn handle(&mut self, msg: RegisterPlayerWebsocket, _ctx: &mut Self::Context) -> Self::Result {
-        let player_status = self
-            .get_player_connection_status(&msg.id)
-            .expect("Cannot register player websocket for nonexistant player");
+        if let None = self.players.get(&msg.id) {
+            panic!(
+                "Cannot register player websocket for nonexistant player: {}",
+                format!("{:?}", msg.id)
+            )
+        }
+        let player_status = self.get_player_connection_status(&msg.id).unwrap();
+
         self.players
             .get_mut(&msg.id)
-            .expect("Tried to register websocket for a player that doesn't exist!")
+            .unwrap()
             .set_websocket_address(msg.websocket);
 
-        self.update_player_with_game_status(&msg.id);
+        self.notify_player_with_game_status(&msg.id);
 
-        let player = self.players.get_mut(&msg.id).unwrap();
-        let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            player: player.clone(),
-            status: player_status,
-        });
-        self.send_message_to_all_users(player_status);
+        self.notify_others_about_this_player(&msg.id, player_status);
     }
 }
 
