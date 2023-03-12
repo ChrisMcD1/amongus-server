@@ -112,6 +112,13 @@ impl Game {
         }
     }
     pub fn notify_players_of_next_state(&mut self, voted_out: Option<Uuid>) {
+        if let Some(voted_out_id) = voted_out {
+            let player = self.players.get(&voted_out_id).unwrap();
+            self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                player: player.clone(),
+                status: PlayerConnectionStatus::Existing,
+            }))
+        }
         match self.has_winner() {
             Some(winner) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
@@ -121,13 +128,6 @@ impl Game {
                     state: GameStateEnum::InGame,
                 }))
             }
-        }
-        if let Some(voted_out_id) = voted_out {
-            let player = self.players.get(&voted_out_id).unwrap();
-            self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                player: player.clone(),
-                status: PlayerConnectionStatus::Existing,
-            }))
         }
     }
     pub fn notify_others_about_this_player(
