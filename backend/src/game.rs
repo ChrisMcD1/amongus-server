@@ -94,7 +94,7 @@ impl Game {
                         let mut voted_out = self.players.get_mut(&voted_out_user).unwrap();
                         voted_out.alive = false;
                     }
-                    self.notify_players_of_next_state();
+                    self.notify_players_of_next_state(voted_out_user_option);
                 }
                 None => {
                     println!("Received Message to end meeting, but it has already ended!")
@@ -111,7 +111,7 @@ impl Game {
             None
         }
     }
-    pub fn notify_players_of_next_state(&mut self) {
+    pub fn notify_players_of_next_state(&mut self, voted_out: Option<Uuid>) {
         match self.has_winner() {
             Some(winner) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
@@ -121,6 +121,13 @@ impl Game {
                     state: GameStateEnum::InGame,
                 }))
             }
+        }
+        if let Some(voted_out_id) = voted_out {
+            let player = self.players.get(&voted_out_id).unwrap();
+            self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                player: player.clone(),
+                status: PlayerConnectionStatus::Existing,
+            }))
         }
     }
     pub fn notify_others_about_this_player(
@@ -325,7 +332,12 @@ impl Handler<IncomingMessageInternal> for Game {
         match msg.incoming {
             IncomingWebsocketMessage::KillPlayer(kill) => {
                 self.handle_kill(msg.initiator, kill.target);
-                self.notify_players_of_next_state();
+                match self.has_winner() {
+                    Some(winner) => {
+                        self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
+                    }
+                    None => {}
+                }
             }
             IncomingWebsocketMessage::ReportBody(report) => {
                 self.handle_report(msg.initiator, report.corpse, ctx);
