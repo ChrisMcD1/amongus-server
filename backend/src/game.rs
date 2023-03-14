@@ -118,6 +118,7 @@ impl Game {
     }
     pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
         self.meeting = Some(Meeting::new(self.alive_players()));
+        self.make_all_players_alive_status_known();
         println!("Started meeting as {:?}", self.meeting);
         ctx.notify_later(EndVoting {}, VOTING_TIME);
     }
@@ -154,11 +155,16 @@ impl Game {
             None
         }
     }
+    pub fn make_all_players_alive_status_known(&mut self) {
+        self.players.iter_mut().for_each(|player| {
+            player.1.alive.make_public();
+        });
+        self.players.iter().for_each(|player| {
+            self.send_player_status_to_all_users(player.1, PlayerConnectionStatus::Existing)
+        });
+    }
     pub fn notify_players_of_next_state(&mut self, voted_out: Option<Uuid>) {
-        if let Some(voted_out_id) = voted_out {
-            let player = self.players.get(&voted_out_id).unwrap();
-            self.send_player_status_to_all_users(player, PlayerConnectionStatus::Existing);
-        }
+        self.make_all_players_alive_status_known();
         match self.has_winner() {
             Some(winner) => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
