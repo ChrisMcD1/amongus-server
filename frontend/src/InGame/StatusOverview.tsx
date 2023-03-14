@@ -3,6 +3,7 @@ import { selectCurrentPlayer, selectOtherPlayers } from "../state/playersSlice";
 import { useState } from "react";
 import { createEmergencyMeetingMessage, createKillPlayerMessage, createReportBodyMessage } from "../Messages/toServer";
 import PlayerTileArray from "./PlayerTileArray";
+import PlayerTile from "./PlayerTile";
 
 type StatusOverviewProps = { ws: WebSocket | undefined };
 
@@ -35,14 +36,17 @@ function StatusOverview(props: StatusOverviewProps) {
     }
     return (
         <div className="flex h-screen w-screen flex-col place-content-center justify-center p-5">
+            <div className="align-self-start">
+                <h1 className="text-center m-5">{currentPlayer?.username} {currentPlayer?.alive === false ? "(I'm a ghost)" : ""}</h1>
+                {currentPlayer?.role === "imposter" &&
+                    <div className="text-center">I'm an imposter :)</div>
+                }
+            </div>
             <button onClick={callEmergencyMeeting}>
                 Call Emergency Meeting!
             </button>
             <PlayerTileArray players={otherPlayers} setSelectedPlayerID={setSelectedPlayerID} selectedPlayerID={selectedPlayerID} />
 
-            {currentPlayer?.role === "imposter" &&
-                <div>I'm an imposter :)</div>
-            }
             <div className="grid grid-cols-2 gap-2">
                 <button onClick={killCrewmate}>Kill Target </button>
                 <button onClick={reportBody}>Report Body</button>
