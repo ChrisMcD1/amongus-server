@@ -33,6 +33,36 @@ impl Game {
             .iter_mut()
             .for_each(|player| player.1.send_outgoing_message(msg.clone()))
     }
+    fn send_player_status_to_all_users(
+        &self,
+        target_player: &Player,
+        status: PlayerConnectionStatus,
+    ) {
+        self.players.iter().for_each(|player| {
+            let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                player: PlayerSerializable::generate_for_user(target_player, &player.1.id),
+                status: status.clone(),
+            });
+            player.1.send_outgoing_message(player_status);
+        })
+    }
+    fn send_player_status_to_all_users_except(
+        &self,
+        target_player: &Player,
+        status: PlayerConnectionStatus,
+        excluded_player: &Uuid,
+    ) {
+        self.players
+            .iter()
+            .filter(|player| player.1.id != *excluded_player)
+            .for_each(|player| {
+                let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
+                    player: PlayerSerializable::generate_for_user(target_player, &player.1.id),
+                    status: status.clone(),
+                });
+                player.1.send_outgoing_message(player_status);
+            })
+    }
     fn send_message_to_all_users_except(
         &mut self,
         msg: OutgoingWebsocketMessage,
@@ -53,13 +83,16 @@ impl Game {
         }
     }
     pub fn alive_players(&self) -> u32 {
-        self.players.iter().filter(|player| player.1.alive).count() as u32
+        self.players
+            .iter()
+            .filter(|player| player.1.alive.get_true_state())
+            .count() as u32
     }
     pub fn crewmates_alive(&self) -> u32 {
         self.players
             .iter()
             .filter(|player| player.1.role.unwrap() == Role::Crewmate)
-            .filter(|player| player.1.alive)
+            .filter(|player| player.1.alive.get_true_state())
             .count() as u32
     }
     pub fn imposters_alive(&self) -> u32 {
@@ -69,7 +102,7 @@ impl Game {
                 Role::Imposter(_) => true,
                 _ => false,
             })
-            .filter(|player| player.1.alive)
+            .filter(|player| player.1.alive.get_true_state())
             .count() as u32
     }
     pub fn get_imposters(&self) -> Vec<Player> {
@@ -101,8 +134,8 @@ impl Game {
                         },
                     ));
                     if let Some(voted_out_user) = voted_out_user_option {
-                        let mut voted_out = self.players.get_mut(&voted_out_user).unwrap();
-                        voted_out.alive = false;
+                        let voted_out = self.players.get_mut(&voted_out_user).unwrap();
+                        voted_out.alive.set_public_data_and_reveal(false);
                     }
                     self.notify_players_of_next_state(voted_out_user_option);
                 }
@@ -124,10 +157,7 @@ impl Game {
     pub fn notify_players_of_next_state(&mut self, voted_out: Option<Uuid>) {
         if let Some(voted_out_id) = voted_out {
             let player = self.players.get(&voted_out_id).unwrap();
-            self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                player: player.clone(),
-                status: PlayerConnectionStatus::Existing,
-            }))
+            self.send_player_status_to_all_users(player, PlayerConnectionStatus::Existing);
         }
         match self.has_winner() {
             Some(winner) => {
@@ -142,13 +172,8 @@ impl Game {
     }
     pub fn notify_others_about_this_player(&mut self, player_id: &Uuid) {
         let player_status = self.get_player_connection_status(&player_id).unwrap();
-        let player = self.players.get_mut(player_id).unwrap();
-        let player_id = player.id.clone();
-        let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            player: player.clone(),
-            status: player_status,
-        });
-        self.send_message_to_all_users_except(player_status, &player_id);
+        let player = self.players.get(player_id).unwrap();
+        self.send_player_status_to_all_users_except(player, player_status, &player.id);
     }
     pub fn notify_player_with_all_info(&mut self, player_id: &Uuid) {
         self.tell_player_about_themselves(player_id);
@@ -163,19 +188,20 @@ impl Game {
             .clone();
         let player = self.players.get_mut(player_id).unwrap();
         player.send_outgoing_message(OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-            player: player.clone(),
+            player: PlayerSerializable::generate_for_user(player, player_id),
             status,
         }));
     }
 
     fn tell_player_about_others(&mut self, player_id: &Uuid) {
+        let player = self.players.get(player_id).unwrap();
         let existing_players_status: Vec<OutgoingWebsocketMessage> = self
             .players
             .iter()
             .filter(|(_, existing_player)| existing_player.id != *player_id)
             .map(|(_, existing_player)| {
                 return OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                    player: existing_player.clone(),
+                    player: PlayerSerializable::generate_for_user(existing_player, &player.id),
                     status: PlayerConnectionStatus::Existing,
                 });
             })
@@ -260,7 +286,7 @@ impl Game {
         }
     }
     fn handle_report(&mut self, initiator: Uuid, corpse_id: Uuid, ctx: &mut Context<Self>) {
-        if self.players.get(&corpse_id).unwrap().alive {
+        if self.players.get(&corpse_id).unwrap().alive.get_true_state() {
             let initiating_player = self.players.get_mut(&initiator).unwrap();
             initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
                 "You cannot report this body, they are alive!".to_string(),
@@ -297,7 +323,9 @@ impl Game {
                 _ => unreachable!("We already validated that this kill can happen, which means the initiator is an imposter"),
             }
         let target_player = self.players.get_mut(&target).unwrap();
-        target_player.alive = false;
+        target_player
+            .alive
+            .set_private_data(false, &vec![initiator.clone(), target.clone()]);
         target_player.send_outgoing_message(OutgoingWebsocketMessage::PlayerDied(PlayerDied {
             killer: initiator,
         }));
@@ -320,7 +348,7 @@ impl Game {
                 let target_player = self.players.get(&target).unwrap();
                 match target_player.role.unwrap() {
                     Role::Crewmate => {
-                        if !target_player.alive {
+                        if !target_player.alive.get_true_state() {
                             return Some(format!(
                                 "You cannot kill {} since they are already dead",
                                 target_player.username
@@ -377,12 +405,10 @@ impl Handler<IncomingMessageInternal> for Game {
                     .get_mut(&msg.initiator)
                     .unwrap()
                     .set_color(choose_color.color.clone());
-                self.send_message_to_all_users(OutgoingWebsocketMessage::PlayerStatus(
-                    PlayerStatus {
-                        player: self.players.get(&msg.initiator).unwrap().clone(),
-                        status: PlayerConnectionStatus::Existing,
-                    },
-                ))
+                self.send_player_status_to_all_users(
+                    &self.players.get(&msg.initiator).unwrap(),
+                    PlayerConnectionStatus::Existing,
+                );
             }
         }
     }
@@ -401,11 +427,11 @@ impl Handler<PlayerDisconnected> for Game {
         match self.players.get_mut(&msg.id) {
             Some(player) => {
                 player.close_websocket();
-                let player_status = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-                    player: player.clone(),
-                    status: PlayerConnectionStatus::Disconnected,
-                });
-                self.send_message_to_all_users(player_status);
+                let player_clone = player.clone();
+                self.send_player_status_to_all_users(
+                    &player_clone,
+                    PlayerConnectionStatus::Disconnected,
+                );
             }
             None => {
                 println!("Tried to remove player with id {:?}, but they had already been removed somewhere else", msg.id);

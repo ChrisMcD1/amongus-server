@@ -6,6 +6,7 @@ use among_us_server::game::Game;
 use among_us_server::incoming_websocket_messages::*;
 use among_us_server::outgoing_websocket_messages::*;
 use among_us_server::player::Player;
+use among_us_server::player::PlayerSerializable;
 use awc::Client;
 use futures_util::{SinkExt as _, StreamExt as _};
 use test_fixtures::assert_connection_recieves_message;
@@ -129,7 +130,7 @@ async fn other_player_receives_disconnect() {
     let kate_id = test_fixtures::get_next_id_in_connection(&mut chris_connection).await;
 
     let kate_disconnect = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-        player: Player::new("Kate", kate_id),
+        player: PlayerSerializable::generate_for_user(&Player::new("Kate", kate_id), &kate_id),
         status: PlayerConnectionStatus::Disconnected,
     });
     assert_connection_recieves_message(&mut chris_connection, kate_disconnect).await;

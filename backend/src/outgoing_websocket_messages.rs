@@ -2,7 +2,7 @@ use actix::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::player::Player;
+use crate::player::{Player, PlayerSerializable};
 
 #[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
@@ -43,7 +43,7 @@ pub enum PlayerConnectionStatus {
 #[serde(rename_all = "camelCase")]
 #[rtype(result = "()")]
 pub struct PlayerStatus {
-    pub player: Player,
+    pub player: PlayerSerializable,
     pub status: PlayerConnectionStatus,
 }
 

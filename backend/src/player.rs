@@ -1,3 +1,4 @@
+use crate::confidential_data::ConfidentialData;
 use crate::game::Game;
 use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
@@ -14,18 +15,37 @@ use uuid::Uuid;
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Player {
+    pub role: Option<Role>,
+    pub username: String,
+    pub alive: ConfidentialData<bool, Uuid>,
+    pub color: String,
+    pub has_connected_previously: bool,
+    pub id: Uuid,
+    pub websocket: Option<Addr<PlayerWebsocket>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct Player {
-    #[serde(skip_serializing, skip_deserializing)]
-    pub role: Option<Role>,
+pub struct PlayerSerializable {
     pub username: String,
     pub alive: bool,
     pub color: String,
     pub has_connected_previously: bool,
     pub id: Uuid,
-    #[serde(skip_serializing, skip_deserializing)]
-    pub websocket: Option<Addr<PlayerWebsocket>>,
+}
+
+impl PlayerSerializable {
+    pub fn generate_for_user(player: &Player, user_id: &Uuid) -> Self {
+        PlayerSerializable {
+            username: player.username.clone(),
+            alive: player.alive.get(*user_id),
+            color: player.color.clone(),
+            has_connected_previously: player.has_connected_previously.clone(),
+            id: player.id.clone(),
+        }
+    }
 }
 
 impl Player {
@@ -33,7 +53,7 @@ impl Player {
         Player {
             role: None,
             username: name.to_string(),
-            alive: true,
+            alive: ConfidentialData::new(false),
             color: "#FFFFFF".to_string(),
             has_connected_previously: false,
             id,
@@ -58,7 +78,7 @@ impl Player {
     pub fn finish_player_connection(&mut self) {
         self.has_connected_previously = true;
     }
-    pub fn send_outgoing_message(&mut self, msg: OutgoingWebsocketMessage) {
+    pub fn send_outgoing_message(&self, msg: OutgoingWebsocketMessage) {
         self.send_websocket_message_internal(msg);
     }
     fn send_websocket_message_internal(&self, msg: OutgoingWebsocketMessage) {
