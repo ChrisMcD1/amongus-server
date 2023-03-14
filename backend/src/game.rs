@@ -620,4 +620,4 @@ impl Meeting {
     }
 }
 
-const VOTING_TIME: Duration = Duration::from_secs(60);
+const VOTING_TIME: Duration = Duration::from_secs(0);
