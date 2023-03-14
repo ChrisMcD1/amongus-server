@@ -15,7 +15,7 @@ pub enum OutgoingWebsocketMessage {
     GameState(GameState),
     PlayerRole(SetRole),
     PlayerDied(PlayerDied),
-    SuccessfulKill(()),
+    SuccessfulKill(Uuid),
     InvalidAction(String),
     BodyReported(BodyReported),
     EmergencyMeetingCalled(EmergencyMeetingCalled),

@@ -1,7 +1,7 @@
-import { deleteAllPlayers, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
+import { deleteAllPlayers, setPlayerDead, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
 import { showErrorMessage, hideErrorMessage } from './state/errorsSlice';
 import store from './state/store';
-import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner, InvalidAction, EmergencyMeetingCalled, BodyReported } from "./Messages/fromServer";
+import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner, InvalidAction, EmergencyMeetingCalled, BodyReported, PlayerDied } from "./Messages/fromServer";
 import { setUserID } from './state/userSlice';
 import { push } from 'redux-first-history';
 import { beginEmergencyMeeting, beginReportedBodyMeeting } from './state/meetingSlice';
@@ -95,6 +95,17 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
             const bodyReported = BodyReported.parse(parsed.content);
             store.dispatch(beginReportedBodyMeeting(bodyReported));
             store.dispatch(push("/meeting"));
+            break;
+        }
+        case "SuccessfulKill": {
+            store.dispatch(setPlayerDead(parsed.content));
+            break;
+        }
+        case "PlayerDied": {
+            let _playerDied = PlayerDied.parse(parsed.content);
+            store.dispatch(setPlayerDead(
+                store.getState().user.id
+            ));
             break;
         }
         default: {

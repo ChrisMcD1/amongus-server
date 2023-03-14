@@ -60,6 +60,14 @@ export const playersSlice = createSlice({
                 }
             }
         },
+        setPlayerDead: (state, action: PayloadAction<string>) => {
+            let targetPlayer = state.players.find(player => player.id === action.payload);
+            if (targetPlayer == null) {
+                console.error(`Tried to set ${action.payload} dead, but they do not exist!`);
+                return;
+            }
+            targetPlayer.alive = false;
+        },
         setPlayerRole: (state, action: PayloadAction<SetPlayerRolePayload>) => {
             const player = state.players.find(player => player.id === action.payload.id);
             if (player == null) {
@@ -80,6 +88,6 @@ export const playersSlice = createSlice({
     }
 })
 
-export const { updatePlayerStatus, setPlayerColor, deleteAllPlayers, setPlayerRole, } = playersSlice.actions
+export const { updatePlayerStatus, setPlayerColor, deleteAllPlayers, setPlayerRole, setPlayerDead } = playersSlice.actions
 
 export default playersSlice.reducer

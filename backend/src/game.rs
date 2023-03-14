@@ -324,7 +324,7 @@ impl Game {
                 Some(Role::Imposter(imposter)) => {
                     initiating_player.role = Some(Role::Imposter(imposter.reset_kill_cooldown()));
                     initiating_player
-                        .send_outgoing_message(OutgoingWebsocketMessage::SuccessfulKill(()));
+                        .send_outgoing_message(OutgoingWebsocketMessage::SuccessfulKill(target));
                 }
                 _ => unreachable!("We already validated that this kill can happen, which means the initiator is an imposter"),
             }
