@@ -53,7 +53,7 @@ impl Player {
         Player {
             role: None,
             username: name.to_string(),
-            alive: ConfidentialData::new(false),
+            alive: ConfidentialData::new(true),
             color: "#FFFFFF".to_string(),
             has_connected_previously: false,
             id,
