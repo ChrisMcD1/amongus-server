@@ -13,7 +13,7 @@ export default function PlayerTileArray(props: PlayerTileArryProps) {
         {props.players.map((player) => {
             return (
                 <div key={player.id} onClick={() => props.setSelectedPlayerID(player.id)}>
-                    <PlayerTile  {...player} isSelected={player.id === props.selectedPlayerID} />
+                    <PlayerTile  {...player} isSelected={player.id === props.selectedPlayerID} showBorder={true} className="" />
                 </div>
             )
         })}

@@ -25,8 +25,8 @@ export default function Lobby(props: LobbyProps) {
 
     const playerColor = currentPlayer?.color ?? "#FF00FF";
     let darkerColor = Color(playerColor).darken(0.3);
-    document.documentElement.style.setProperty("--base-color", playerColor);
-    document.documentElement.style.setProperty("--shadow-color", darkerColor.hex());
+    //    document.documentElement.style.setProperty("--base-color", playerColor);
+    //    document.documentElement.style.setProperty("--shadow-color", darkerColor.hex());
 
 
     const handleChange = (color: ColorResult) => {
@@ -39,12 +39,15 @@ export default function Lobby(props: LobbyProps) {
 
     return (
         <div className="h-screen w-screen items-center bg-lobby bg-[length:auto_100%] bg-center bg-no-repeat bg-black">
-            <div className="flex flex-col items-center">
-                <h3 className="mx-auto absolute font-amongus-log top-[23%] text-2xl text-white">{currentPlayer?.username}</h3>
-                <AmongusMan
-                    className="player absolute inset-1/4 top-[27%] mx-auto h-[8%] items-center md:h-20"
-                    onClick={() => setCheck(!check)}
-                />
+            <div className="flex flex-col items-center h-[100%]">
+                <div className="absolute top-[20%] h-[12%]">
+                    <h3 className="mx-auto text-center font-amongus-log text-2xl text-white">{currentPlayer?.username}</h3>
+                    <AmongusMan
+                        style={{ ["--base-color" as any]: playerColor, ["--shadow-color" as any]: Color(playerColor).darken(0.3) }}
+                        className="mx-auto items-center h-[100%]"
+                        onClick={() => setCheck(!check)}
+                    />
+                </div>
                 <div
                     className="absolute top-1/3"
                     style={{ display: check ? "initial" : "none" }}
@@ -54,7 +57,7 @@ export default function Lobby(props: LobbyProps) {
             </div>
             <div className="absolute bottom-0 flex">
                 {otherPlayers.map((player) => (
-                    <PlayerTile key={player.id} {...player} isSelected={false} />
+                    <PlayerTile className="h-32" key={player.id} {...player} showBorder={false} isSelected={false} />
                 ))}
             </div>
         </div>
