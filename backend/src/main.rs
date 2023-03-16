@@ -11,7 +11,7 @@ async fn main() -> std::io::Result<()> {
     println!("Hello, world!");
     let mut rng = rand::thread_rng();
     let game_settings = GameSettings {
-        kill_cooldown: Duration::from_secs(60),
+        kill_cooldown: Duration::from_secs(0),
     };
     let game = Game::new(game_settings, rng.gen()).start();
     HttpServer::new(move || {

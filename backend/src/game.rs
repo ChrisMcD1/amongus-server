@@ -281,6 +281,13 @@ impl Handler<StartMeeting> for Game {
 
 impl Game {
     fn handle_vote(&mut self, initiator: Uuid, target: Option<Uuid>) {
+        let initiator_player = self.players.get(&initiator).unwrap();
+        if !initiator_player.alive.get_true_state() {
+            initiator_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
+                "You cannot vote, you are dead!".to_string(),
+            ));
+            return;
+        }
         match self.meeting.as_mut() {
             Some(meeting) => {
                 meeting.add_vote(initiator, target);
@@ -292,6 +299,13 @@ impl Game {
         }
     }
     fn handle_report(&mut self, initiator: Uuid, corpse_id: Uuid, ctx: &mut Context<Self>) {
+        let initiator_player = self.players.get(&initiator).unwrap();
+        if !initiator_player.alive.get_true_state() {
+            initiator_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
+                "You cannot report a body, you are dead!".to_string(),
+            ));
+            return;
+        }
         if self.players.get(&corpse_id).unwrap().alive.get_true_state() {
             let initiating_player = self.players.get_mut(&initiator).unwrap();
             initiating_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
@@ -306,6 +320,13 @@ impl Game {
         self.start_meeting(ctx);
     }
     fn handle_emergency_meeting(&mut self, initiator: Uuid, ctx: &mut Context<Self>) {
+        let initiator_player = self.players.get(&initiator).unwrap();
+        if !initiator_player.alive.get_true_state() {
+            initiator_player.send_outgoing_message(OutgoingWebsocketMessage::InvalidAction(
+                "You cannot call an emergency meeting, you are dead!".to_string(),
+            ));
+            return;
+        }
         self.send_message_to_all_users(OutgoingWebsocketMessage::EmergencyMeetingCalled(
             EmergencyMeetingCalled { initiator },
         ));
@@ -343,6 +364,9 @@ impl Game {
 
     fn validate_kill_can_happen(&mut self, initiator: Uuid, target: Uuid) -> Option<String> {
         let initiating_player = self.players.get(&initiator).unwrap();
+        if !initiating_player.alive.get_true_state() {
+            return Some("You cannot kill anyone, you are dead!".to_string());
+        }
         match initiating_player.role.unwrap() {
             Role::Imposter(ref mut imposter) => {
                 if !imposter.kill_is_off_cooldown() {
@@ -620,4 +644,4 @@ impl Meeting {
     }
 }
 
-const VOTING_TIME: Duration = Duration::from_secs(0);
+const VOTING_TIME: Duration = Duration::from_secs(60);
