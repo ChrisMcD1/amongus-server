@@ -76,6 +76,7 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
 path.body {
   fill: var(--base-color, #FF0000);
   stroke: var(--base-color, #FF0000);

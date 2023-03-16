@@ -38,11 +38,11 @@ export default function Lobby(props: LobbyProps) {
     };
 
     return (
-        <div className="h-screen w-screen items-center bg-lobby bg-cover bg-center">
+        <div className="h-screen w-screen items-center bg-lobby bg-[length:auto_100%] bg-center bg-no-repeat bg-black">
             <div className="flex flex-col items-center">
-                <h3 className="mx-auto absolute font-amongus-log top-[9rem] md:top-[20rem] md:text-lg text-white">{currentPlayer?.username}</h3>
+                <h3 className="mx-auto absolute font-amongus-log top-[23%] text-2xl text-white">{currentPlayer?.username}</h3>
                 <AmongusMan
-                    className="player absolute inset-1/4 top-[27%] mx-auto h-12 items-center md:h-20"
+                    className="player absolute inset-1/4 top-[27%] mx-auto h-[8%] items-center md:h-20"
                     onClick={() => setCheck(!check)}
                 />
                 <div
@@ -52,11 +52,10 @@ export default function Lobby(props: LobbyProps) {
                     <BlockPicker color={background} onChange={handleChange} />
                 </div>
             </div>
-            <div className="absolute bottom-0">
+            <div className="absolute bottom-0 flex">
                 {otherPlayers.map((player) => (
-                    <PlayerTile key={player.id} {...player} />
-                ))
-                }
+                    <PlayerTile key={player.id} {...player} isSelected={false} />
+                ))}
             </div>
         </div>
     );
