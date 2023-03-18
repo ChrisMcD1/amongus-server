@@ -34,15 +34,19 @@ function StatusOverview(props: StatusOverviewProps) {
         }
         props.ws.send(createReportBodyMessage(selectedPlayerID));
     }
+    const [showRole, setShowRole] = useState(false);
     return (
         <div className="flex h-screen w-screen flex-col place-content-center justify-center p-5">
+            <button onClick={() => setShowRole(!showRole)}>
+                {showRole ? "Hide Role" : "Show Role"}
+            </button>
+            {showRole &&
+                <div className="text-center">I am a {currentPlayer?.role}!</div>
+            }
             <div className="align-self-start">
                 <h1 className="text-center m-5">{currentPlayer?.username} {currentPlayer?.alive === false ? "(I'm a ghost)" : ""}</h1>
-                {currentPlayer?.role === "imposter" &&
-                    <div className="text-center">I'm an imposter :)</div>
-                }
             </div>
-            <button onClick={callEmergencyMeeting}>
+            <button className="my-4" onClick={callEmergencyMeeting}>
                 Call Emergency Meeting!
             </button>
             <PlayerTileArray players={otherPlayers} setSelectedPlayerID={setSelectedPlayerID} selectedPlayerID={selectedPlayerID} />
