@@ -43,9 +43,7 @@ function StatusOverview(props: StatusOverviewProps) {
             {showRole &&
                 <div className="text-center">I am a {currentPlayer?.role}!</div>
             }
-            <div className="align-self-start">
-                <h1 className="text-center m-5">{currentPlayer?.username} {currentPlayer?.alive === false ? "(I'm a ghost)" : ""}</h1>
-            </div>
+            <h1 className="align-self-start text-center m-5">{currentPlayer?.username} {currentPlayer?.alive === false ? "(I'm a ghost)" : ""}</h1>
             <button className="my-4" onClick={callEmergencyMeeting}>
                 Call Emergency Meeting!
             </button>
