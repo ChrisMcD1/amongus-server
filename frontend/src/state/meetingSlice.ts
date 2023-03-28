@@ -5,7 +5,8 @@ import { BodyReported } from '../Messages/fromServer';
 
 type MeetingState = {
     initiator: string,
-    reportedBodyID: string | null
+    reportedBodyID: string | null,
+    purpose: "Emergency" | "BodyReported" | null
 }
 
 export function selectMeetingInitiator(store: RootState) {
@@ -15,6 +16,7 @@ export function selectMeetingInitiator(store: RootState) {
 const initialState: MeetingState = {
     initiator: '',
     reportedBodyID: null,
+    purpose: null,
 }
 
 export const meetingSlice = createSlice({
@@ -23,10 +25,12 @@ export const meetingSlice = createSlice({
     reducers: {
         beginEmergencyMeeting: (state, action: PayloadAction<string>) => {
             state.initiator = action.payload
+            state.purpose = "Emergency";
         },
         beginReportedBodyMeeting: (state, action: PayloadAction<z.infer<typeof BodyReported>>) => {
             state.initiator = action.payload.initiator;
             state.reportedBodyID = action.payload.corpse;
+            state.purpose = "BodyReported";
         },
     }
 })
