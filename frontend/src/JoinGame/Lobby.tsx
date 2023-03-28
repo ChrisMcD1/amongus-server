@@ -2,14 +2,17 @@ import { useState } from "react";
 import { ReactComponent as AmongusMan } from "./Whitetest.svg";
 import { BlockPicker, ColorResult } from "react-color";
 import { useNavigate } from "react-router-dom";
-type LobbyProps = { username: string; ws: WebSocket | undefined; };
+type LobbyProps = { username: string; ws: WebSocket | undefined };
 import Color from "color";
-import { useAppDispatch } from '../hooks'
-import { selectCurrentPlayer, selectOtherPlayers, setPlayerColor } from "../state/playersSlice";
+import { useAppDispatch } from "../hooks";
+import {
+    selectCurrentPlayer,
+    selectOtherPlayers,
+    setPlayerColor,
+} from "../state/playersSlice";
 import { useSelector } from "react-redux";
 import PlayerTile from "../InGame/PlayerTile";
 import { createColorMessage } from "../Messages/toServer";
-
 
 export default function Lobby(props: LobbyProps) {
     const [background, setBackground] = useState("#000000");
@@ -18,7 +21,7 @@ export default function Lobby(props: LobbyProps) {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
 
-    const otherPlayers = useSelector(selectOtherPlayers)
+    const otherPlayers = useSelector(selectOtherPlayers);
 
     const currentPlayer = useSelector(selectCurrentPlayer);
     console.log("current player color is :", currentPlayer?.color);
@@ -27,7 +30,6 @@ export default function Lobby(props: LobbyProps) {
     let darkerColor = Color(playerColor).darken(0.3);
     //    document.documentElement.style.setProperty("--base-color", playerColor);
     //    document.documentElement.style.setProperty("--shadow-color", darkerColor.hex());
-
 
     const handleChange = (color: ColorResult) => {
         setBackground(color.hex);
@@ -61,5 +63,5 @@ export default function Lobby(props: LobbyProps) {
                 ))}
             </div>
         </div>
-    );
+    )
 }
