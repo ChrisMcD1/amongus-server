@@ -38,7 +38,7 @@ export default function App() {
 
 
     if (player_id != null && ws == null) {
-        fetch(`http://${import.meta.env.VITE_BACKEND_SERVER}/player-exists?id=${player_id}`)
+        fetch(`https://${import.meta.env.VITE_BACKEND_SERVER}/player-exists?id=${player_id}`)
             .then((res) => res.json())
             .then((exists) => {
                 console.log(exists);

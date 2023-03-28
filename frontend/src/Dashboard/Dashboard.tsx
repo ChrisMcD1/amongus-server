@@ -3,11 +3,11 @@ import start from "../../public/Pictures/start.png";
 export default function Dashboard() {
 
     function startGame() {
-        fetch(`http://${import.meta.env.VITE_BACKEND_SERVER}/start-game`, { method: "POST" });
+        fetch(`https://${import.meta.env.VITE_BACKEND_SERVER}/start-game`, { method: "POST" });
     };
 
     function resetGame() {
-        fetch(`http://${import.meta.env.VITE_BACKEND_SERVER}/reset-game`, { method: "POST" });
+        fetch(`https://${import.meta.env.VITE_BACKEND_SERVER}/reset-game`, { method: "POST" });
     }
 
     return (
