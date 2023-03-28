@@ -40,7 +40,7 @@ export default function Lobby(props: LobbyProps) {
     return (
         <div className="h-screen w-screen items-center bg-lobby bg-[length:auto_100%] bg-center bg-no-repeat bg-black">
             <div className="flex flex-col items-center h-[100%]">
-                <div className="absolute top-[20%] h-[12%]">
+                <div className="absolute top-[25%] h-[8%]">
                     <h3 className="mx-auto text-center font-amongus-log text-2xl text-white">{currentPlayer?.username}</h3>
                     <AmongusMan
                         style={{ ["--base-color" as any]: playerColor, ["--shadow-color" as any]: Color(playerColor).darken(0.3) }}
