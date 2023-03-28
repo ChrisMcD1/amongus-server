@@ -1,9 +1,10 @@
-import { changeColor } from "./JoinGame/colorSlice";
-import { addPlayer } from './playersSlice';
-import { setUser } from "./JoinGame/userSlice";
-import Color from "color";
-import store from './store';
-import { PlayerStatus, PreZodMessage } from "./Messages/fromServer";
+import { deleteAllPlayers, setPlayerDead, setPlayerRole, updatePlayerStatus } from './state/playersSlice';
+import { showErrorMessage, hideErrorMessage } from './state/errorsSlice';
+import store from './state/store';
+import { ChatMessage, GameState, PlayerStatus, PreZodMessage, SetRole, Winner, InvalidAction, EmergencyMeetingCalled, BodyReported, PlayerDied } from "./Messages/fromServer";
+import { setUserID } from './state/userSlice';
+import { push } from 'redux-first-history';
+import { beginEmergencyMeeting, beginReportedBodyMeeting } from './state/meetingSlice';
 
 
 export function configureWebsocket(ws: WebSocket): WebSocket {
@@ -16,43 +17,95 @@ export function configureWebsocket(ws: WebSocket): WebSocket {
 
 
 function processWebsocketMessage(msg: MessageEvent<any>) {
-    const globalPlayers = store.getState().players;
-    const dispatch = store.dispatch;
-    const color = store.getState().color.color;
-    const user = store.getState().user.user;
 
-    // if (useAppSelector == null) {
-    //     console.error("Got websocket message before hook was set up. BAD");
-    //     return;
-    // }
     let parsed = JSON.parse(msg.data) as PreZodMessage;
     switch (parsed.type) {
+        case "ChatMessage": {
+            let chatMessage = ChatMessage.parse(parsed.content);
+            break;
+        }
+        case "PlayerRole": {
+            let playerRole = SetRole.parse(parsed.content);
+            store.dispatch(setPlayerRole(playerRole))
+            break;
+        }
+        case "AssignedID": {
+            store.dispatch(setUserID(parsed.content));
+            break;
+        }
+        case "GameState": {
+            const gameState = GameState.parse(parsed.content);
+            switch (gameState.state) {
+                case "lobby": {
+                    break;
+                }
+                case "inGame": {
+                    store.dispatch(push("/status-overview"));
+                    break;
+                }
+                case "reset": {
+                    store.dispatch(push("/"));
+                    store.dispatch(deleteAllPlayers());
+                    break;
+                }
+                default: {
+                    throw new Error("Received unknown game state!");
+                }
+
+            }
+            break;
+        }
         case "PlayerStatus": {
             let playerStatus = PlayerStatus.parse(parsed.content);
-            console.log(`parsed player status to ${JSON.stringify(playerStatus)}`);
-            let existingPlayer = globalPlayers?.players.find(player => player.id === playerStatus.id);
-            if (existingPlayer == null) {
-                dispatch(addPlayer({
-                    role: null,
-                    color: color,
-                    id: playerStatus.id,
-                    name: user,
-                    alive: true
-                }))
-            } else {
-                dispatch(changeColor(playerStatus.color));
-                dispatch(setUser(playerStatus.username));
-                let color = store.getState().color.color;
-                let darkerColor = Color(color).darken(0.3);
-                document.documentElement.style.setProperty(
-                    "--base-color",
-                    store.getState().color.color
-                );
-                document.documentElement.style.setProperty(
-                    "--shadow-color",
-                    darkerColor.hex()
-                );
+            store.dispatch(updatePlayerStatus(playerStatus))
+            break;
+        }
+        case "GameOver": {
+            const winner = Winner.parse(parsed.content);
+            switch (winner) {
+                case "imposters": {
+                    store.dispatch(push("/imposter-victory"))
+                    break;
+                }
+                case "crewmates": {
+                    store.dispatch(push("/crewmate-victory"))
+                    break;
+                }
+                default: {
+                    throw new Error("Unreachable");
+                }
             }
+            break;
+        }
+        case "InvalidAction": {
+            const invalidAction = InvalidAction.parse(parsed.content);
+            store.dispatch(showErrorMessage(invalidAction));
+            setTimeout(() => {
+                store.dispatch(hideErrorMessage())
+            }, 5000)
+            break;
+        }
+        case "EmergencyMeetingCalled": {
+            const emergencyMeetingCalled = EmergencyMeetingCalled.parse(parsed.content);
+            store.dispatch(beginEmergencyMeeting(emergencyMeetingCalled.initiator));
+            store.dispatch(push("/meeting"));
+            break;
+        }
+        case "BodyReported": {
+            const bodyReported = BodyReported.parse(parsed.content);
+            store.dispatch(beginReportedBodyMeeting(bodyReported));
+            store.dispatch(push("/meeting"));
+            break;
+        }
+        case "SuccessfulKill": {
+            store.dispatch(setPlayerDead(parsed.content));
+            break;
+        }
+        case "PlayerDied": {
+            let _playerDied = PlayerDied.parse(parsed.content);
+            store.dispatch(setPlayerDead(
+                store.getState().user.id
+            ));
             break;
         }
         default: {

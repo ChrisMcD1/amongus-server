@@ -1,3 +1,4 @@
+pub mod confidential_data;
 pub mod game;
 pub mod incoming_websocket_messages;
 pub mod internal_messages;

@@ -1,68 +1,78 @@
 import { useState } from "react";
-import { ReactComponent as Whitetest } from "./Whitetest.svg";
+import { ReactComponent as AmongusMan } from "./Whitetest.svg";
 import { BlockPicker, ColorResult } from "react-color";
-import start from "./start.png";
 import { useNavigate } from "react-router-dom";
-type LobbyProps = { username: string; ws: WebSocket | undefined; };
+type LobbyProps = { username: string; ws: WebSocket | undefined };
 import Color from "color";
-import { useAppSelector, useAppDispatch } from '../hooks'
-import { changeColor } from './colorSlice'
-import { setPlayerColor } from "../playersSlice";
-
+import { useAppDispatch } from "../hooks";
+import {
+  selectCurrentPlayer,
+  selectOtherPlayers,
+  setPlayerColor,
+} from "../state/playersSlice";
+import { useSelector } from "react-redux";
+import PlayerTile from "../InGame/PlayerTile";
+import { createColorMessage } from "../Messages/toServer";
 
 export default function Lobby(props: LobbyProps) {
-    const [background, setBackground] = useState("#000000");
-    const [check, setCheck] = useState(false);
+  const [background, setBackground] = useState("#000000");
+  const [check, setCheck] = useState(false);
 
-    const navigate = useNavigate();
-    const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
-    const handleChange = (color: ColorResult) => {
-        setBackground(color.hex);
-        dispatch(changeColor(color.hex));
-        dispatch(setPlayerColor(color.hex));
-        let darkerColor = Color(color.hex).darken(0.3);
-        document.documentElement.style.setProperty("--base-color", color.hex);
-        document.documentElement.style.setProperty("--shadow-color", darkerColor.hex());
-        let colorMsg = {
-            type: "ChooseColor",
-            content: {
-                color: color.hex
-            }
-        };
-        if (props.ws) {
-            props.ws.send(JSON.stringify(colorMsg));
-        }
-    };
+  const otherPlayers = useSelector(selectOtherPlayers);
 
-    const startGame = () => {
-        fetch("http://localhost:9090/start-game", { method: "POST" });
-        navigate("/begin");
-        setTimeout(() => navigate("/role"), 2000);
-        setTimeout(() => navigate("/status-overview"), 4000);
-    };
+  const currentPlayer = useSelector(selectCurrentPlayer);
+  console.log("current player color is :", currentPlayer?.color);
 
-    return (
-        <div className="h-screen w-screen items-center bg-lobby bg-cover bg-center">
-            <div className="flex flex-col items-center">
-                <h3 className="mx-auto absolute font-amongus-log top-[9rem] md:top-[20rem] md:text-lg text-white">{useAppSelector((state) => state.user.user)}</h3>
-                <Whitetest
-                    className="player absolute inset-1/4 top-[27%] mx-auto h-12 items-center md:h-20"
-                    onClick={() => setCheck(!check)}
-                />
-                <button
-                    style={{ display: check ? "none" : "initial" }}
-                    className="fixed top-1/2 mx-auto bg-transparent"
-                >
-                    <img src={start} onClick={startGame} />
-                </button>
-                <div
-                    className="absolute top-1/3"
-                    style={{ display: check ? "initial" : "none" }}
-                >
-                    <BlockPicker color={background} onChange={handleChange} />
-                </div>
-            </div>
+  const playerColor = currentPlayer?.color ?? "#FF00FF";
+  let darkerColor = Color(playerColor).darken(0.3);
+  //    document.documentElement.style.setProperty("--base-color", playerColor);
+  //    document.documentElement.style.setProperty("--shadow-color", darkerColor.hex());
+
+  const handleChange = (color: ColorResult) => {
+    setBackground(color.hex);
+    dispatch(setPlayerColor({ color: color.hex, id: currentPlayer!.id }));
+    if (props.ws) {
+      props.ws.send(createColorMessage(color.hex));
+    }
+  };
+
+  return (
+    <div className="h-screen w-screen items-center bg-black bg-lobby bg-[length:auto_100%] bg-center bg-no-repeat">
+      <div className="flex h-[100%] flex-col items-center">
+        <div className="absolute top-[20%] h-[12%]">
+          <h3 className="mx-auto text-center font-amongus-log text-2xl text-white">
+            {currentPlayer?.username}
+          </h3>
+          <AmongusMan
+            style={{
+              ["--base-color" as any]: playerColor,
+              ["--shadow-color" as any]: Color(playerColor).darken(0.3),
+            }}
+            className="mx-auto h-[100%] items-center"
+            onClick={() => setCheck(!check)}
+          />
         </div>
-    );
+        <div
+          className="absolute top-1/3"
+          style={{ display: check ? "initial" : "none" }}
+        >
+          <BlockPicker color={background} onChange={handleChange} />
+        </div>
+      </div>
+      <div className="absolute bottom-0 flex">
+        {otherPlayers.map((player) => (
+          <PlayerTile
+            className="h-32"
+            key={player.id}
+            {...player}
+            showBorder={false}
+            isSelected={false}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }

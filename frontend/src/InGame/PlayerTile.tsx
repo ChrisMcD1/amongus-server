@@ -1,15 +1,26 @@
-import { Player } from "./StatusOverview";
+import { Player } from "../state/playersSlice"
+import Color from "color";
+import { ReactComponent as AmongusMan } from "../JoinGame/Whitetest.svg";
 
-export default function PlayerTile(props: Player) {
-  console.log(props);
-  return (
-    <div className="m-1 flex flex-col items-center rounded-xl border-2 border-solid border-white p-2">
-      <div
-        style={{ backgroundColor: props.color }}
-        className="mx-auto h-20 w-20 rounded-full"
-      ></div>
-      <div>{props.name}</div>
-      <div>{props.alive ? "I'm alive" : "I'm dead"}</div>
-    </div>
-  );
+type PlayerTileProps = Player & {
+    isSelected: boolean,
+    showBorder: boolean,
+    className: string
+}
+
+export default function PlayerTile(props: PlayerTileProps) {
+    var selectedBorderColor = (props.isSelected ? 'border-red-500' : 'border-white');
+    var borderClasses = `rounded-2xl border-2 border-solid ${selectedBorderColor}`;
+    return (
+        <div className={`m-1 flex flex-col items-center p-2 ${props.showBorder ? borderClasses : ""} ${props.className}`}>
+            <div style={props.alive ? { color: 'white' } : { color: 'red' }} className="font-amongus-log text-2xl">{props.username}</div>
+            <AmongusMan
+                style={{
+                    ["--base-color" as any]: props.color, ["--shadow-color" as any]: Color(props.color).darken(0.3)
+                }}
+                className="player mx-auto h-[100%] items-center md:h-20"
+            />
+
+        </div>
+    );
 }

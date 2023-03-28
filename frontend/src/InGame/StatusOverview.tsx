@@ -1,30 +1,60 @@
-import { useContext } from "react";
-import { v4 as uuidV4 } from "uuid";
+import { useAppSelector } from "../hooks";
+import { selectCurrentPlayer, selectOtherPlayers } from "../state/playersSlice";
+import { useState } from "react";
+import { createEmergencyMeetingMessage, createKillPlayerMessage, createReportBodyMessage } from "../Messages/toServer";
+import PlayerTileArray from "./PlayerTileArray";
 import PlayerTile from "./PlayerTile";
-import { useAppDispatch, useAppSelector } from "../hooks";
 
-export type Player = {
-  role: string | null;
-  color: string;
-  name: string;
-  alive: boolean;
-  id: ReturnType<typeof uuidV4>;
-};
+type StatusOverviewProps = { ws: WebSocket | undefined };
 
-type StatusOverviewProps = {};
+function StatusOverview(props: StatusOverviewProps) {
+    const currentPlayer = useAppSelector(selectCurrentPlayer);
+    const otherPlayers = useAppSelector(selectOtherPlayers);
+    const [selectedPlayerID, setSelectedPlayerID] = useState<string | undefined>(undefined);
+    function callEmergencyMeeting() {
+        props.ws?.send(createEmergencyMeetingMessage());
+    }
+    function killCrewmate() {
+        if (props.ws == null) {
+            throw new Error("Cannot call kill crewmate without a websocket");
+        }
+        if (selectedPlayerID == null) {
+            console.warn("Its a bit silly to kill without a target");
+            return;
+        }
+        props.ws.send(createKillPlayerMessage(selectedPlayerID));
+    }
+    function reportBody() {
+        if (props.ws == null) {
+            throw new Error("Cannot call report crewmate without a websocket");
+        }
+        if (selectedPlayerID == null) {
+            console.warn("Its a bit silly to report without a target");
+            return;
+        }
+        props.ws.send(createReportBodyMessage(selectedPlayerID));
+    }
+    const [showRole, setShowRole] = useState(false);
+    return (
+        <div className="flex h-screen w-screen flex-col place-content-center justify-center p-5">
+            <button onClick={() => setShowRole(!showRole)}>
+                {showRole ? "Hide Role" : "Show Role"}
+            </button>
+            {showRole &&
+                <div className="text-center">I am a {currentPlayer?.role}!</div>
+            }
+            <h1 className="align-self-start text-center m-4">{currentPlayer?.username} {currentPlayer?.alive === false ? "(I'm a ghost)" : ""}</h1>
+            <button className="my-2" onClick={callEmergencyMeeting}>
+                Call Emergency Meeting!
+            </button>
+            <PlayerTileArray players={otherPlayers} setSelectedPlayerID={setSelectedPlayerID} selectedPlayerID={selectedPlayerID} />
 
-function StatusOverview(_props: StatusOverviewProps) {
-  const { players } = useAppSelector((state) => state.players);
-  return (
-    <div className="flex h-screen flex-col place-content-center justify-center">
-      <h1 className="mx-auto mt-0 mb-10">Game Overview</h1>
-      <div className="justify-left flex flex-wrap place-content-center">
-        {players.map((player) => (
-          <PlayerTile key={player.id} {...player} />
-        ))}
-      </div>
-    </div>
-  );
+            <div className="grid grid-cols-2 gap-2">
+                <button onClick={killCrewmate}>Kill Target </button>
+                <button onClick={reportBody}>Report Body</button>
+            </div>
+        </div >
+    );
 }
 
 export default StatusOverview;

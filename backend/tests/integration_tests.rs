@@ -5,6 +5,8 @@ use among_us_server::config_app;
 use among_us_server::game::Game;
 use among_us_server::incoming_websocket_messages::*;
 use among_us_server::outgoing_websocket_messages::*;
+use among_us_server::player::Player;
+use among_us_server::player::PlayerSerializable;
 use awc::Client;
 use futures_util::{SinkExt as _, StreamExt as _};
 use test_fixtures::assert_connection_recieves_message;
@@ -30,6 +32,7 @@ async fn player_joins_game() {
         .await
         .unwrap();
 
+    let _assigned_id_frame = connection.next().await.unwrap().unwrap();
     let join_message_frame = connection.next().await.unwrap().unwrap();
 
     let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
@@ -37,9 +40,9 @@ async fn player_joins_game() {
     match join_message {
         OutgoingWebsocketMessage::PlayerStatus(status) => {
             assert_eq!(status.status, PlayerConnectionStatus::New);
-            assert_eq!(status.username, "Chris");
+            assert_eq!(status.player.username, "Chris");
         }
-        _ => assert!(false, "Parsed to wrong thing"),
+        _ => unreachable!("Parsed to wrong thing {}", format!("{:?}", join_message)),
     }
 }
 
@@ -55,7 +58,7 @@ async fn one_player_assigned_imposter() {
 
     let _ = server.post("/start-game").send().await;
 
-    let _player_join = connection.next().await;
+    let player_id = test_fixtures::get_next_id_in_connection(&mut connection).await;
 
     let game_started = OutgoingWebsocketMessage::GameState(GameState {
         state: GameStateEnum::InGame,
@@ -63,6 +66,7 @@ async fn one_player_assigned_imposter() {
 
     let assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
         role: RoleAssignment::Imposter,
+        id: player_id,
     });
 
     assert_connection_recieves_message(&mut connection, assigned_imposter).await;
@@ -87,17 +91,17 @@ async fn one_player_each_role() {
 
     let _ = server.post("/start-game").send().await;
 
-    let _chris_join = chris_connection.next().await;
-    let _kate_join = chris_connection.next().await;
-
-    let _kate_join = kate_connection.next().await;
+    let chris_id = test_fixtures::get_next_id_in_connection(&mut chris_connection).await;
+    let kate_id = test_fixtures::get_next_id_in_connection(&mut chris_connection).await;
 
     let chris_assigned_crewmate = OutgoingWebsocketMessage::PlayerRole(SetRole {
         role: RoleAssignment::Crewmate,
+        id: chris_id,
     });
 
     let kate_assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
         role: RoleAssignment::Imposter,
+        id: kate_id,
     });
 
     assert_connection_recieves_message(&mut chris_connection, chris_assigned_crewmate).await;
@@ -122,18 +126,11 @@ async fn other_player_receives_disconnect() {
 
     kate_connection.close().await.unwrap();
 
-    let _chris_join = chris_connection.next().await;
-    let kate_join_frame = chris_connection.next().await.unwrap().unwrap();
-    let kate_join = test_fixtures::get_websocket_frame_data(kate_join_frame).unwrap();
-
-    let kate_id = match kate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-        _ => unreachable!(),
-    };
+    let _chris_id = test_fixtures::get_next_id_in_connection(&mut chris_connection).await;
+    let kate_id = test_fixtures::get_next_id_in_connection(&mut chris_connection).await;
 
     let kate_disconnect = OutgoingWebsocketMessage::PlayerStatus(PlayerStatus {
-        username: "Kate".to_string(),
-        id: kate_id,
+        player: PlayerSerializable::generate_for_user(&Player::new("Kate", kate_id), &kate_id),
         status: PlayerConnectionStatus::Disconnected,
     });
     assert_connection_recieves_message(&mut chris_connection, kate_disconnect).await;
@@ -163,23 +160,10 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
 
     let _ = server.post("/start-game").send().await;
 
-    let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
-    let _imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-    let second_crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
-
-    let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
-    let second_crewmate_join =
-        test_fixtures::get_websocket_frame_data(second_crewmate_join).unwrap();
-
-    let crewmate_id = match crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-        _ => unreachable!(),
-    };
-
-    let second_crewmate_id = match second_crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-        _ => unreachable!(),
-    };
+    let crewmate_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
+    let _imposter_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
+    let second_crewmate_id =
+        test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
 
     imposter_connection
         .send(awc::ws::Message::Text(
@@ -230,21 +214,8 @@ async fn imposter_kills_sucessfully_and_ends_game() {
 
     let _ = server.post("/start-game").send().await;
 
-    let crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
-    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-
-    let crewmate_join = test_fixtures::get_websocket_frame_data(crewmate_join).unwrap();
-    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
-
-    let crewmate_id = match crewmate_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-        _ => unreachable!(),
-    };
-
-    let imposter_id = match imposter_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-        _ => unreachable!(),
-    };
+    let crewmate_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
+    let imposter_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
 
     imposter_connection
         .send(awc::ws::Message::Text(
@@ -257,7 +228,7 @@ async fn imposter_kills_sucessfully_and_ends_game() {
         .await
         .unwrap();
 
-    let imposter_successful_kill = OutgoingWebsocketMessage::SuccessfulKill(());
+    let imposter_successful_kill = OutgoingWebsocketMessage::SuccessfulKill(crewmate_id);
     assert_connection_recieves_message(&mut imposter_connection, imposter_successful_kill).await;
 
     let crewmate_death = OutgoingWebsocketMessage::PlayerDied(PlayerDied {
@@ -287,22 +258,15 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
 
     let _ = server.post("/start-game").send().await;
 
-    let _crewmate_join = crewmate_connection.next().await.unwrap().unwrap();
-    let imposter_join = crewmate_connection.next().await.unwrap().unwrap();
-
-    let imposter_join = test_fixtures::get_websocket_frame_data(imposter_join).unwrap();
-
-    let imposter_id = match imposter_join {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-        _ => unreachable!(),
-    };
+    let _crewmate_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
+    let imposter_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
 
     let _ = server.post("/start-meeting").send().await;
 
     crewmate_connection
         .send(awc::ws::Message::Text(
             serde_json::to_string(&IncomingWebsocketMessage::Vote(Vote {
-                target: imposter_id,
+                target: Some(imposter_id),
             }))
             .unwrap()
             .into(),
@@ -313,7 +277,7 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
     imposter_connection
         .send(awc::ws::Message::Text(
             serde_json::to_string(&IncomingWebsocketMessage::Vote(Vote {
-                target: imposter_id,
+                target: Some(imposter_id),
             }))
             .unwrap()
             .into(),
@@ -341,13 +305,7 @@ async fn player_changes_color() {
         .await
         .unwrap();
 
-    let join_message_frame = connection.next().await.unwrap().unwrap();
-    let join_message = test_fixtures::get_websocket_frame_data(join_message_frame).unwrap();
-
-    let player_id = match join_message {
-        OutgoingWebsocketMessage::PlayerStatus(status) => status.id,
-        _ => unreachable!(),
-    };
+    let player_id = test_fixtures::get_next_id_in_connection(&mut connection).await;
 
     let route = format!("get-player-color?id={player_id}");
     println!("the route is {route}");
@@ -399,13 +357,11 @@ async fn reset_game_works_basic() {
 
     let _ = server.post("/reset-game").send().await;
 
-    let _join = chris_connection.next().await;
+    let game_reset_msg = OutgoingWebsocketMessage::GameState(GameState {
+        state: GameStateEnum::Reset,
+    });
 
-    let no_message = chris_connection.next().await;
-
-    let websocket_disconnected = no_message.is_none();
-
-    assert_eq!(websocket_disconnected, true);
+    assert_connection_recieves_message(&mut chris_connection, game_reset_msg).await;
 }
 
 mod test_fixtures {
@@ -421,6 +377,7 @@ mod test_fixtures {
     use awc::BoxedSocket;
     use std::string::String;
     use std::time::Duration;
+    use uuid::Uuid;
 
     use super::*;
 
@@ -452,6 +409,16 @@ mod test_fixtures {
             _ => return None,
         }
     }
+    pub async fn get_next_id_in_connection(connection: &mut Framed<BoxedSocket, Codec>) -> Uuid {
+        while let Some(message) =
+            get_websocket_frame_data(connection.next().await.unwrap().unwrap())
+        {
+            if let OutgoingWebsocketMessage::PlayerStatus(status) = message {
+                return status.player.id;
+            }
+        }
+        unreachable!("{}", format!("Unable to find next id in connection",));
+    }
     pub async fn assert_connection_recieves_message(
         connection: &mut Framed<BoxedSocket, Codec>,
         desired_message: OutgoingWebsocketMessage,
@@ -461,6 +428,21 @@ mod test_fixtures {
         {
             if message == desired_message {
                 return;
+            }
+            match (&message, &desired_message) {
+                (
+                    OutgoingWebsocketMessage::PlayerStatus(player_status),
+                    OutgoingWebsocketMessage::PlayerStatus(desired_player_status),
+                ) => {
+                    if player_status.player.username == desired_player_status.player.username
+                        && player_status.player.id == desired_player_status.player.id
+                        && player_status.player.color == desired_player_status.player.color
+                        && player_status.status == desired_player_status.status
+                    {
+                        return;
+                    }
+                }
+                _ => {}
             }
         }
         assert!(

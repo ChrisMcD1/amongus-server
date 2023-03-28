@@ -1,9 +1,13 @@
+use crate::confidential_data::ConfidentialData;
 use crate::game::Game;
 use crate::incoming_websocket_messages::*;
 use crate::internal_messages::*;
 use crate::outgoing_websocket_messages::*;
 use actix::dev::*;
 use actix_web_actors::ws;
+use bytestring::ByteString;
+use serde::Deserialize;
+use serde::Serialize;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
@@ -11,23 +15,45 @@ use uuid::Uuid;
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Player {
     pub role: Option<Role>,
-    pub name: String,
-    pub alive: bool,
+    pub username: String,
+    pub alive: ConfidentialData<bool, Uuid>,
     pub color: String,
     pub has_connected_previously: bool,
     pub id: Uuid,
     pub websocket: Option<Addr<PlayerWebsocket>>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerSerializable {
+    pub username: String,
+    pub alive: bool,
+    pub color: String,
+    pub has_connected_previously: bool,
+    pub id: Uuid,
+}
+
+impl PlayerSerializable {
+    pub fn generate_for_user(player: &Player, user_id: &Uuid) -> Self {
+        PlayerSerializable {
+            username: player.username.clone(),
+            alive: player.alive.get(*user_id),
+            color: player.color.clone(),
+            has_connected_previously: player.has_connected_previously.clone(),
+            id: player.id.clone(),
+        }
+    }
+}
+
 impl Player {
     pub fn new(name: &str, id: Uuid) -> Self {
         Player {
             role: None,
-            name: name.to_string(),
-            alive: true,
+            username: name.to_string(),
+            alive: ConfidentialData::new(true),
             color: "#FFFFFF".to_string(),
             has_connected_previously: false,
             id,
@@ -48,9 +74,14 @@ impl Player {
     }
     pub fn set_websocket_address(&mut self, websocket: Addr<PlayerWebsocket>) {
         self.websocket = Some(websocket);
+    }
+    pub fn finish_player_connection(&mut self) {
         self.has_connected_previously = true;
     }
     pub fn send_outgoing_message(&self, msg: OutgoingWebsocketMessage) {
+        self.send_websocket_message_internal(msg);
+    }
+    fn send_websocket_message_internal(&self, msg: OutgoingWebsocketMessage) {
         match &self.websocket {
             Some(websocket) => websocket.do_send(msg),
             None => {
@@ -66,7 +97,10 @@ impl Player {
             RoleAssignment::Crewmate => Role::Crewmate,
             RoleAssignment::Imposter => Role::Imposter(Imposter::new(kill_cooldown)),
         });
-        self.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole { role }));
+        self.send_outgoing_message(OutgoingWebsocketMessage::PlayerRole(SetRole {
+            role,
+            id: self.id,
+        }));
     }
     pub fn set_color(&mut self, color: String) {
         self.color = color;
@@ -106,7 +140,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerWebsocket {
                 ctx.stop();
             }
             Ok(ws::Message::Nop) => {}
-            Ok(ws::Message::Text(s)) => self.handle_incoming_message(s.to_string(), ctx),
+            Ok(ws::Message::Text(s)) => self.handle_incoming_message(s, ctx),
 
             Err(e) => panic!("{}", e),
         }
@@ -117,6 +151,8 @@ impl Actor for PlayerWebsocket {
     type Context = ws::WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         self.heartbeat(ctx);
+        ctx.address()
+            .do_send(OutgoingWebsocketMessage::AssignedID(self.id));
         self.game.do_send(RegisterPlayerWebsocket {
             id: self.id,
             websocket: ctx.address(),
@@ -148,7 +184,11 @@ impl PlayerWebsocket {
             ctx.ping(b"PING");
         });
     }
-    fn handle_incoming_message(&mut self, msg: String, ctx: &mut ws::WebsocketContext<Self>) {
+    fn handle_incoming_message(&mut self, msg: ByteString, ctx: &mut ws::WebsocketContext<Self>) {
+        println!(
+            "Received a message from the user {:?} of {:?}",
+            self.id, msg
+        );
         let msg = serde_json::from_str::<IncomingWebsocketMessage>(&msg);
         match msg {
             Ok(msg) => self.game.do_send(IncomingMessageInternal {
