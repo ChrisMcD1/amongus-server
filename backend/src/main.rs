@@ -24,16 +24,32 @@ async fn main() -> std::io::Result<()> {
             )
         }
     };
+    let cert_file = match File::open(full_chain_path) {
+        Ok(file) => file,
+        _ => {
+            unreachable!("Unable to find full chain path at {:?}", full_chain_path)
+        }
+    };
 
-    let cert_file = &mut BufReader::new(File::open(full_chain_path).unwrap());
-    let cert_chain = certs(cert_file)
+    let cert_reader = &mut BufReader::new(cert_file);
+    let cert_chain = certs(cert_reader)
         .unwrap()
         .into_iter()
         .map(|vec| rustls::Certificate(vec))
         .collect();
 
-    let private_key_file = &mut BufReader::new(File::open(private_key_path).unwrap());
-    let private_key = pkcs8_private_keys(private_key_file).unwrap().remove(0);
+    let private_key_file = match File::open(private_key_path) {
+        Ok(file) => file,
+        _ => {
+            unreachable!(
+                "Unable to find private key chain path at {:?}",
+                private_key_path
+            )
+        }
+    };
+
+    let private_key_reader = &mut BufReader::new(private_key_file);
+    let private_key = pkcs8_private_keys(private_key_reader).unwrap().remove(0);
 
     let config = ServerConfig::builder()
         .with_safe_defaults()
