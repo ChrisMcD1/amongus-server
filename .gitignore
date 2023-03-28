@@ -1,4 +1,6 @@
 backend/target
 *.pem
 *.pem*
+*.key
+*.crt
 .ssh
