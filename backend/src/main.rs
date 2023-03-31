@@ -18,10 +18,7 @@ async fn main() -> std::io::Result<()> {
         if cfg!(debug_assertions) {
             ("localhost.crt", "localhost.key")
         } else {
-            (
-                "/etc/letsencrypt/live/backend.amongus-irl.com/fullchain.pem",
-                "/etc/letsencrypt/live/backend.amongus-irl.com/privkey.pem",
-            )
+            ("/keys/fullchain.pem", "/keys/privkey.pem")
         }
     };
     let cert_file = match File::open(full_chain_path) {
