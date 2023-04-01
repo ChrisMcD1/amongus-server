@@ -16,7 +16,7 @@ async fn main() -> std::io::Result<()> {
 
     let (full_chain_path, private_key_path) = {
         if cfg!(debug_assertions) {
-            ("localhost.crt", "localhost.key")
+            ("server.crt", "server.key")
         } else {
             ("/keys/fullchain.pem", "/keys/privkey.pem")
         }

@@ -41,6 +41,8 @@ pub async fn join_game(
     let player_id = game.send(GetNextUUID {}).await.unwrap();
     let cookie = Cookie::build("player_id", player_id.clone().to_string())
         .domain(".amongus-irl.com")
+        .domain("localhost")
+        .same_site(actix_web::cookie::SameSite::Strict)
         .secure(true)
         .finish();
 
