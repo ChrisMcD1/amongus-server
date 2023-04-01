@@ -242,10 +242,16 @@ impl Game {
         }
     }
     fn tell_player_about_game_state(&mut self, player_id: &Uuid) {
+        let has_winner = self.has_winner();
         let player = self.players.get_mut(player_id).unwrap();
-        player.send_outgoing_message(OutgoingWebsocketMessage::GameState(GameState {
-            state: self.state.clone(),
-        }));
+        match has_winner {
+            Some(winner) => {
+                player.send_outgoing_message(OutgoingWebsocketMessage::GameOver(winner))
+            }
+            None => player.send_outgoing_message(OutgoingWebsocketMessage::GameState(GameState {
+                state: GameStateEnum::InGame,
+            })),
+        }
     }
 }
 
