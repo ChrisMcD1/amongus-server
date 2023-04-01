@@ -21,10 +21,13 @@ async fn main() -> std::io::Result<()> {
             ("/keys/fullchain.pem", "/keys/privkey.pem")
         }
     };
+    println!("About to open this guy");
     let cert_file = match File::open(full_chain_path) {
         Ok(file) => file,
-        _ => {
-            unreachable!("Unable to find full chain path at {:?}", full_chain_path)
+        Err(err) => {
+            println!("{:?}", err);
+            println!("Unable to find full chain path at {:?}", full_chain_path);
+            return Ok(());
         }
     };
 
@@ -37,7 +40,8 @@ async fn main() -> std::io::Result<()> {
 
     let private_key_file = match File::open(private_key_path) {
         Ok(file) => file,
-        _ => {
+        Err(err) => {
+            println!("{:?}", err);
             unreachable!(
                 "Unable to find private key chain path at {:?}",
                 private_key_path
@@ -63,7 +67,7 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default().allow_any_origin().allow_any_header();
         App::new().configure(config_app(game.clone())).wrap(cors)
     })
-    .bind_rustls("localhost:9090", config)?
+    .bind_rustls("0.0.0.0:9090", config)?
     .run()
     .await
 }

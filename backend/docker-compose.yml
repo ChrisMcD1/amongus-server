@@ -1,0 +1,9 @@
+version: "3"
+services:
+  amongus-backend:
+    image: ${AMONGUS_REPOSITORY_IMAGE}
+    ports:
+      - "443:9090"
+    volumes:
+      - /etc/letsencrypt/live/backend.amongus-irl.com/fullchain.pem:/keys/fullchain.pem
+      - /etc/letsencrypt/live/backend.amongus-irl.com/privkey.pem:/keys/privkey.pem
