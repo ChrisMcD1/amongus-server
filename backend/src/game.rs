@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct Game {
-    state: GameStateEnum,
+    state: GameState,
     players: BTreeMap<Uuid, Player>,
     kill_cooldown: Duration,
     pub rng: Pcg32,
@@ -28,10 +28,13 @@ pub struct GameSettings {
 }
 
 impl Game {
-    fn send_message_to_all_users(&mut self, msg: OutgoingWebsocketMessage) {
+    fn send_message_to_all_users(&self, msg: OutgoingWebsocketMessage) {
         self.players
-            .iter_mut()
+            .iter()
             .for_each(|player| player.1.send_outgoing_message(msg.clone()))
+    }
+    fn send_state_update_to_all_users(&self) {
+        self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(self.state.clone()));
     }
     fn send_player_status_to_all_users(
         &self,
@@ -75,7 +78,7 @@ impl Game {
     }
     pub fn new(settings: GameSettings, seed: u64) -> Self {
         Game {
-            state: GameStateEnum::Lobby,
+            state: GameState::Lobby,
             players: BTreeMap::new(),
             kill_cooldown: settings.kill_cooldown,
             rng: Pcg32::seed_from_u64(seed),
@@ -110,39 +113,39 @@ impl Game {
             .filter(|player| player.is_imposter())
             .collect()
     }
-    pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
+    pub fn start_meeting(&mut self, ctx: &mut Context<Self>, reason: MeetingReason) {
         self.meeting = Some(Meeting::new(self.alive_players()));
+        self.state = GameState::Meeting(reason);
         self.make_all_players_alive_status_known();
         println!("Started meeting as {:?}", self.meeting);
         ctx.notify_later(EndVoting {}, VOTING_TIME);
+        self.send_state_update_to_all_users();
     }
     pub fn end_meeting(&mut self) {
         println!("Stopping meeting");
-        {
-            match self.meeting.as_ref() {
-                Some(meeting) => {
-                    let voted_out_user_option = meeting.person_voted_out();
-                    self.meeting = None;
-                    self.send_message_to_all_users(OutgoingWebsocketMessage::VotingResults(
-                        VotingResults {
-                            ejected_player: voted_out_user_option,
-                        },
-                    ));
-                    if let Some(voted_out_user) = voted_out_user_option {
-                        let voted_out = self.players.get_mut(&voted_out_user).unwrap();
-                        voted_out.alive.set_public_data_and_reveal(false);
-                    }
-                    self.notify_players_of_next_state();
+        match self.meeting.as_ref() {
+            Some(meeting) => {
+                let voted_out_user_option = meeting.person_voted_out();
+                self.meeting = None;
+                self.send_message_to_all_users(OutgoingWebsocketMessage::VotingResults(
+                    VotingResults {
+                        ejected_player: voted_out_user_option,
+                    },
+                ));
+                if let Some(voted_out_user) = voted_out_user_option {
+                    let voted_out = self.players.get_mut(&voted_out_user).unwrap();
+                    voted_out.alive.set_public_data_and_reveal(false);
                 }
-                None => {
-                    println!("Received Message to end meeting, but it has already ended!")
-                }
+                self.notify_players_of_next_state();
+            }
+            None => {
+                println!("Received Message to end meeting, but it has already ended!")
             }
         }
     }
     pub fn has_winner(&self) -> Option<Winner> {
         match self.state {
-            GameStateEnum::InGame => {
+            GameState::InGame => {
                 if self.crewmates_alive() == 0 {
                     Some(Winner::Imposters)
                 } else if self.imposters_alive() == 0 {
@@ -164,16 +167,7 @@ impl Game {
     }
     pub fn notify_players_of_next_state(&mut self) {
         self.make_all_players_alive_status_known();
-        match self.has_winner() {
-            Some(winner) => {
-                self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
-            }
-            None => {
-                self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
-                    state: self.state.clone(),
-                }))
-            }
-        }
+        self.send_state_update_to_all_users();
     }
     pub fn notify_others_about_this_player(&mut self, player_id: &Uuid) {
         let player_status = self.get_player_connection_status(&player_id).unwrap();
@@ -240,17 +234,9 @@ impl Game {
             }
         }
     }
-    fn tell_player_about_game_state(&mut self, player_id: &Uuid) {
-        let has_winner = self.has_winner();
-        let player = self.players.get_mut(player_id).unwrap();
-        match has_winner {
-            Some(winner) => {
-                player.send_outgoing_message(OutgoingWebsocketMessage::GameOver(winner))
-            }
-            None => player.send_outgoing_message(OutgoingWebsocketMessage::GameState(GameState {
-                state: self.state.clone(),
-            })),
-        }
+    fn tell_player_about_game_state(&self, player_id: &Uuid) {
+        let player = self.players.get(player_id).unwrap();
+        player.send_outgoing_message(OutgoingWebsocketMessage::GameState(self.state.clone()));
     }
 }
 
@@ -279,8 +265,8 @@ impl Handler<EndVoting> for Game {
 
 impl Handler<StartMeeting> for Game {
     type Result = ();
-    fn handle(&mut self, _msg: StartMeeting, ctx: &mut Self::Context) -> Self::Result {
-        self.start_meeting(ctx);
+    fn handle(&mut self, msg: StartMeeting, ctx: &mut Self::Context) -> Self::Result {
+        self.start_meeting(ctx, msg.reason);
     }
 }
 
@@ -318,11 +304,13 @@ impl Game {
             ));
             return;
         }
-        self.send_message_to_all_users(OutgoingWebsocketMessage::BodyReported(BodyReported {
-            corpse: corpse_id,
-            initiator,
-        }));
-        self.start_meeting(ctx);
+        self.start_meeting(
+            ctx,
+            MeetingReason::BodyReported(BodyReported {
+                corpse: corpse_id,
+                initiator,
+            }),
+        );
     }
     fn handle_emergency_meeting(&mut self, initiator: Uuid, ctx: &mut Context<Self>) {
         let initiator_player = self.players.get(&initiator).unwrap();
@@ -332,10 +320,10 @@ impl Game {
             ));
             return;
         }
-        self.send_message_to_all_users(OutgoingWebsocketMessage::EmergencyMeetingCalled(
-            EmergencyMeetingCalled { initiator },
-        ));
-        self.start_meeting(ctx)
+        self.start_meeting(
+            ctx,
+            MeetingReason::EmergencyMeetingCalled(EmergencyMeetingCalled { initiator }),
+        );
     }
     fn handle_kill(&mut self, initiator: Uuid, target: Uuid) {
         let potential_error_message = self.validate_kill_can_happen(initiator, target);
@@ -479,9 +467,10 @@ impl Handler<HasGameStarted> for Game {
     type Result = bool;
     fn handle(&mut self, _msg: HasGameStarted, _ctx: &mut Self::Context) -> Self::Result {
         match self.state {
-            GameStateEnum::Lobby => false,
-            GameStateEnum::Reset => false,
-            GameStateEnum::InGame => true,
+            GameState::Lobby => false,
+            GameState::InGame => true,
+            GameState::Meeting(_) => true,
+            GameState::Over(_) => true,
         }
     }
 }
@@ -538,10 +527,8 @@ impl Handler<GetNextUUID> for Game {
 impl Handler<ResetGame> for Game {
     type Result = ();
     fn handle(&mut self, _msg: ResetGame, _ctx: &mut Self::Context) -> Self::Result {
-        self.state = GameStateEnum::Lobby;
-        self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
-            state: GameStateEnum::Reset,
-        }));
+        self.state = GameState::Lobby;
+        self.send_state_update_to_all_users();
         for (_, player) in self.players.iter_mut() {
             player.close_websocket();
         }
@@ -552,14 +539,14 @@ impl Handler<ResetGame> for Game {
 impl Handler<StartGame> for Game {
     type Result = ();
     fn handle(&mut self, _msg: StartGame, _ctx: &mut Self::Context) -> Self::Result {
-        if self.state != GameStateEnum::Lobby {
+        if self.state != GameState::Lobby {
             println!(
                 "Unable to start game for game that is not in lobby state.
                      This game is in state {:?}",
                 self.state
             );
         }
-        self.state = GameStateEnum::InGame;
+        self.state = GameState::InGame;
         let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);
         let mut imposters: HashSet<Uuid> = HashSet::new();
@@ -585,10 +572,6 @@ impl Handler<StartGame> for Game {
                 .unwrap()
                 .set_role(*role.1, self.kill_cooldown)
         });
-
-        self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
-            state: GameStateEnum::InGame,
-        }));
     }
 }
 

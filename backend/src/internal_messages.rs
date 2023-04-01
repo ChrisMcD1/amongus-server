@@ -1,4 +1,5 @@
 use crate::incoming_websocket_messages::IncomingWebsocketMessage;
+use crate::outgoing_websocket_messages::MeetingReason;
 use crate::player::PlayerWebsocket;
 use actix::prelude::*;
 use std::sync::Arc;
@@ -57,7 +58,9 @@ pub struct EndVoting {}
 
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct StartMeeting {}
+pub struct StartMeeting {
+    pub reason: MeetingReason,
+}
 
 #[derive(Message)]
 #[rtype(result = "Arc<Uuid>")]

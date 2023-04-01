@@ -2,7 +2,7 @@ use actix::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::player::{Player, PlayerSerializable};
+use crate::player::PlayerSerializable;
 
 #[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]
@@ -17,8 +17,6 @@ pub enum OutgoingWebsocketMessage {
     PlayerDied(PlayerDied),
     SuccessfulKill(Uuid),
     InvalidAction(String),
-    BodyReported(BodyReported),
-    EmergencyMeetingCalled(EmergencyMeetingCalled),
     VotingResults(VotingResults),
     GameOver(Winner),
 }
@@ -49,17 +47,12 @@ pub struct PlayerStatus {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub enum GameStateEnum {
+#[serde(tag = "type", content = "content")]
+pub enum GameState {
     Lobby,
     InGame,
-    Reset,
-}
-
-#[derive(Message, PartialEq, Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-#[rtype(result = "()")]
-pub struct GameState {
-    pub state: GameStateEnum,
+    Meeting(MeetingReason),
+    Over(Winner),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -104,6 +97,13 @@ pub struct EmergencyMeetingCalled {
 pub enum Winner {
     Imposters,
     Crewmates,
+}
+
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MeetingReason {
+    BodyReported(BodyReported),
+    EmergencyMeetingCalled(EmergencyMeetingCalled),
 }
 
 #[derive(Message, PartialEq, Debug, Clone, Serialize, Deserialize)]
