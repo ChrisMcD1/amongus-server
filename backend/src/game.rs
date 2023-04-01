@@ -91,17 +91,14 @@ impl Game {
     pub fn crewmates_alive(&self) -> u32 {
         self.players
             .iter()
-            .filter(|player| player.1.role.unwrap() == Role::Crewmate)
+            .filter(|player| player.1.is_crewmate())
             .filter(|player| player.1.alive.get_true_state())
             .count() as u32
     }
     pub fn imposters_alive(&self) -> u32 {
         self.players
             .iter()
-            .filter(|player| match player.1.role.unwrap() {
-                Role::Imposter(_) => true,
-                _ => false,
-            })
+            .filter(|player| player.1.is_imposter())
             .filter(|player| player.1.alive.get_true_state())
             .count() as u32
     }
@@ -110,10 +107,7 @@ impl Game {
             .clone()
             .into_iter()
             .map(|player| player.1)
-            .filter(|player| match player.role {
-                Some(Role::Imposter(_)) => true,
-                _ => false,
-            })
+            .filter(|player| player.is_imposter())
             .collect()
     }
     pub fn start_meeting(&mut self, ctx: &mut Context<Self>) {
@@ -138,7 +132,7 @@ impl Game {
                         let voted_out = self.players.get_mut(&voted_out_user).unwrap();
                         voted_out.alive.set_public_data_and_reveal(false);
                     }
-                    self.notify_players_of_next_state(voted_out_user_option);
+                    self.notify_players_of_next_state();
                 }
                 None => {
                     println!("Received Message to end meeting, but it has already ended!")
@@ -163,7 +157,7 @@ impl Game {
             self.send_player_status_to_all_users(player.1, PlayerConnectionStatus::Existing)
         });
     }
-    pub fn notify_players_of_next_state(&mut self, voted_out: Option<Uuid>) {
+    pub fn notify_players_of_next_state(&mut self) {
         self.make_all_players_alive_status_known();
         match self.has_winner() {
             Some(winner) => {

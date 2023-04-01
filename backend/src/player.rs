@@ -105,6 +105,24 @@ impl Player {
     pub fn set_color(&mut self, color: String) {
         self.color = color;
     }
+    pub fn is_crewmate(&self) -> bool {
+        match self.role {
+            Some(role) => match role {
+                Role::Crewmate => true,
+                _ => false,
+            },
+            None => false,
+        }
+    }
+    pub fn is_imposter(&self) -> bool {
+        match self.role {
+            Some(role) => match role {
+                Role::Imposter(_) => true,
+                _ => false,
+            },
+            None => false,
+        }
+    }
 }
 
 impl Handler<CloseWebsocket> for PlayerWebsocket {
