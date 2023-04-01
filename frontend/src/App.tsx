@@ -55,8 +55,6 @@ export default function App() {
                         store.dispatch(setUserID(player_id));
                     }
                 } else {
-                    document.cookie =
-                        "player_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 }
             });
     }

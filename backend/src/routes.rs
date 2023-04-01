@@ -4,6 +4,7 @@ use crate::player::PlayerWebsocket;
 use actix::prelude::*;
 use actix_web::cookie::Cookie;
 use actix_web::post;
+use actix_web::HttpResponse;
 use actix_web::{
     error, get,
     web::{Data, Payload, Query},
@@ -40,18 +41,6 @@ pub async fn join_game(
     }
     let player_id = game.send(GetNextUUID {}).await.unwrap();
 
-    let domain = if cfg!(debug_assertions) {
-        "localhost"
-    } else {
-        ".amongus-irl.com"
-    };
-
-    let cookie = Cookie::build("player_id", player_id.clone().to_string())
-        .domain(domain)
-        .same_site(actix_web::cookie::SameSite::Strict)
-        .secure(true)
-        .finish();
-
     game.do_send(RegisterPlayer {
         name: params.username.clone(),
         id: *player_id,
@@ -59,7 +48,9 @@ pub async fn join_game(
 
     let player_websocket = PlayerWebsocket::new(*player_id, game.get_ref().clone());
     let mut player_websocket_active = ws::start(player_websocket, &req, stream).unwrap();
-    player_websocket_active.add_cookie(&cookie).unwrap();
+    player_websocket_active
+        .add_cookie(&build_player_id_cookie(&player_id.to_string()))
+        .unwrap();
 
     player_websocket_active
 }
@@ -78,9 +69,28 @@ pub async fn player_exists(
 ) -> impl Responder {
     let player_exists = game.send(PlayerExists { id: params.id }).await.unwrap();
 
-    player_exists.to_string()
+    if player_exists {
+        HttpResponse::Ok().json(true)
+    } else {
+        let mut cookie = build_player_id_cookie("");
+        cookie.make_removal();
+        HttpResponse::Ok().cookie(cookie).json(false)
+    }
 }
 
+fn build_player_id_cookie(id: &str) -> Cookie {
+    let domain = if cfg!(debug_assertions) {
+        "localhost"
+    } else {
+        ".amongus-irl.com"
+    };
+
+    Cookie::build("player_id", id.to_string())
+        .domain(domain)
+        .same_site(actix_web::cookie::SameSite::Strict)
+        .secure(true)
+        .finish()
+}
 #[get("/player-rejoin-game")]
 pub async fn player_rejoin(
     req: HttpRequest,
