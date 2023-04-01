@@ -64,6 +64,7 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                             break;
                         }
                     }
+                    break;
                 }
                 //                case "reset": {
                 //                   store.dispatch(push("/"));

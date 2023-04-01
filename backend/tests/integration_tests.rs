@@ -60,17 +60,15 @@ async fn one_player_assigned_imposter() {
 
     let player_id = test_fixtures::get_next_id_in_connection(&mut connection).await;
 
-    let game_started = OutgoingWebsocketMessage::GameState(GameState {
-        state: GameState::InGame,
-    });
+    let game_started = OutgoingWebsocketMessage::GameState(GameState::InGame);
 
     let assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
         role: RoleAssignment::Imposter,
         id: player_id,
     });
 
-    assert_connection_recieves_message(&mut connection, assigned_imposter).await;
     assert_connection_recieves_message(&mut connection, game_started).await;
+    assert_connection_recieves_message(&mut connection, assigned_imposter).await;
 }
 
 #[test]
@@ -187,10 +185,12 @@ async fn imposter_kills_sucessfully_and_gets_reported() {
         .await
         .unwrap();
 
-    let body_reported_message = OutgoingWebsocketMessage::BodyReported(BodyReported {
-        corpse: crewmate_id,
-        initiator: second_crewmate_id,
-    });
+    let body_reported_message = OutgoingWebsocketMessage::GameState(GameState::Meeting(
+        MeetingReason::BodyReported(BodyReported {
+            corpse: crewmate_id,
+            initiator: second_crewmate_id,
+        }),
+    ));
 
     assert_connection_recieves_message(&mut second_crewmate_connection, body_reported_message)
         .await;
@@ -236,7 +236,7 @@ async fn imposter_kills_sucessfully_and_ends_game() {
     });
     assert_connection_recieves_message(&mut crewmate_connection, crewmate_death).await;
 
-    let imposters_won = OutgoingWebsocketMessage::GameOver(Winner::Imposters);
+    let imposters_won = OutgoingWebsocketMessage::GameState(GameState::Over(Winner::Imposters));
     assert_connection_recieves_message(&mut imposter_connection, imposters_won).await;
 }
 
@@ -261,7 +261,14 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
     let _crewmate_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
     let imposter_id = test_fixtures::get_next_id_in_connection(&mut crewmate_connection).await;
 
-    let _ = server.post("/start-meeting").send().await;
+    crewmate_connection
+        .send(awc::ws::Message::Text(
+            serde_json::to_string(&IncomingWebsocketMessage::CallEmergencyMeeting)
+                .unwrap()
+                .into(),
+        ))
+        .await
+        .unwrap();
 
     crewmate_connection
         .send(awc::ws::Message::Text(
@@ -291,7 +298,8 @@ async fn crewmate_votes_out_imposter_and_ends_game() {
 
     assert_connection_recieves_message(&mut imposter_connection, imposter_voted_out_msg).await;
 
-    let crewmates_won_message = OutgoingWebsocketMessage::GameOver(Winner::Crewmates);
+    let crewmates_won_message =
+        OutgoingWebsocketMessage::GameState(GameState::Over(Winner::Crewmates));
     assert_connection_recieves_message(&mut imposter_connection, crewmates_won_message).await;
 }
 
@@ -357,9 +365,7 @@ async fn reset_game_works_basic() {
 
     let _ = server.post("/reset-game").send().await;
 
-    let game_reset_msg = OutgoingWebsocketMessage::GameState(GameState {
-        state: GameState::Reset,
-    });
+    let game_reset_msg = OutgoingWebsocketMessage::ResetGame(());
 
     assert_connection_recieves_message(&mut chris_connection, game_reset_msg).await;
 }

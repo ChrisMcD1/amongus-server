@@ -10,6 +10,7 @@ use crate::player::PlayerSerializable;
 #[rtype(result = "()")]
 pub enum OutgoingWebsocketMessage {
     GameState(GameState),
+    ResetGame(()),
     ChatMessage(ChatMessage),
     AssignedID(Uuid),
     PlayerStatus(PlayerStatus),
@@ -18,7 +19,6 @@ pub enum OutgoingWebsocketMessage {
     SuccessfulKill(Uuid),
     InvalidAction(String),
     VotingResults(VotingResults),
-    GameOver(Winner),
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]

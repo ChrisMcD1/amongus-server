@@ -33,9 +33,6 @@ impl Game {
             .iter()
             .for_each(|player| player.1.send_outgoing_message(msg.clone()))
     }
-    fn send_state_update_to_all_users(&self) {
-        self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(self.state.clone()));
-    }
     fn send_player_status_to_all_users(
         &self,
         target_player: &Player,
@@ -105,11 +102,14 @@ impl Game {
     }
     pub fn start_meeting(&mut self, ctx: &mut Context<Self>, reason: MeetingReason) {
         self.meeting = Some(Meeting::new(self.alive_players()));
-        self.state = GameState::Meeting(reason);
-        self.make_all_players_alive_status_known();
+        self.set_state_and_update(GameState::Meeting(reason));
         println!("Started meeting as {:?}", self.meeting);
         ctx.notify_later(EndVoting {}, VOTING_TIME);
-        self.send_state_update_to_all_users();
+    }
+    pub fn set_state_and_update(&mut self, state: GameState) {
+        self.state = state;
+        self.make_all_players_alive_status_known();
+        self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(self.state.clone()));
     }
     pub fn end_meeting(&mut self) {
         println!("Stopping meeting");
@@ -126,7 +126,12 @@ impl Game {
                     let voted_out = self.players.get_mut(&voted_out_user).unwrap();
                     voted_out.alive.set_public_data_and_reveal(false);
                 }
-                self.notify_players_of_next_state();
+
+                let new_state = match self.has_winner() {
+                    Some(winner) => GameState::Over(winner),
+                    None => GameState::InGame,
+                };
+                self.set_state_and_update(new_state);
             }
             None => {
                 println!("Received Message to end meeting, but it has already ended!")
@@ -135,7 +140,7 @@ impl Game {
     }
     pub fn has_winner(&self) -> Option<Winner> {
         match self.state {
-            GameState::InGame => {
+            GameState::InGame | GameState::Meeting(_) => {
                 if self.crewmates_alive() == 0 {
                     Some(Winner::Imposters)
                 } else if self.imposters_alive() == 0 {
@@ -154,10 +159,6 @@ impl Game {
         self.players.iter().for_each(|player| {
             self.send_player_status_to_all_users(player.1, PlayerConnectionStatus::Existing)
         });
-    }
-    pub fn notify_players_of_next_state(&mut self) {
-        self.make_all_players_alive_status_known();
-        self.send_state_update_to_all_users();
     }
     pub fn notify_others_about_this_player(&mut self, player_id: &Uuid) {
         let player_status = self.get_player_connection_status(&player_id).unwrap();
@@ -399,7 +400,7 @@ impl Handler<IncomingMessageInternal> for Game {
                 self.handle_kill(msg.initiator, kill.target);
                 match self.has_winner() {
                     Some(winner) => {
-                        self.send_message_to_all_users(OutgoingWebsocketMessage::GameOver(winner))
+                        self.set_state_and_update(GameState::Over(winner));
                     }
                     None => {}
                 }
@@ -518,7 +519,7 @@ impl Handler<ResetGame> for Game {
     type Result = ();
     fn handle(&mut self, _msg: ResetGame, _ctx: &mut Self::Context) -> Self::Result {
         self.state = GameState::Lobby;
-        self.send_state_update_to_all_users();
+        self.send_message_to_all_users(OutgoingWebsocketMessage::ResetGame(()));
         for (_, player) in self.players.iter_mut() {
             player.close_websocket();
         }
@@ -536,7 +537,7 @@ impl Handler<StartGame> for Game {
                 self.state
             );
         }
-        self.state = GameState::InGame;
+        self.set_state_and_update(GameState::InGame);
         let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);
         let mut imposters: HashSet<Uuid> = HashSet::new();
