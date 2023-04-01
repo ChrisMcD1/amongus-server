@@ -21,6 +21,7 @@ import ImposterVictory from "./InGame/ImposterVictory";
 import ErrorMessage from "./ErrorMessage";
 import Meeting from "./InGame/Meeting";
 import CrewmateVictory from "./InGame/CrewmateVictory";
+import { push } from "redux-first-history";
 
 export default function App() {
     const [username, setUsername] = useState("");
@@ -58,6 +59,9 @@ export default function App() {
                         "player_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 }
             });
+    }
+    if (player_id == null) {
+        store.dispatch(push("/"));
     }
 
     return (
