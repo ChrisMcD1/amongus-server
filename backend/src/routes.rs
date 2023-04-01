@@ -35,6 +35,9 @@ pub async fn join_game(
     if game_has_started {
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
     }
+    if params.username.is_empty() {
+        return error::ErrorBadRequest("You must input a name ;)").into();
+    }
     let player_id = game.send(GetNextUUID {}).await.unwrap();
     let cookie = Cookie::build("player_id", player_id.clone().to_string())
         .domain(".amongus-irl.com")
