@@ -46,7 +46,7 @@ function StatusOverview(props: StatusOverviewProps) {
             <button className="my-2 text-white bg-gray-600" onClick={callEmergencyMeeting}>
                 Call Emergency Meeting!
             </button>
-            <div className="h-[50%]">
+            <div className="flex-shrink min-h-0">
                 <PlayerTileArray players={otherPlayers} setSelectedPlayerID={setSelectedPlayerID} selectedPlayerID={selectedPlayerID} />
             </div>
 

@@ -59,7 +59,7 @@ export default function Lobby(props: LobbyProps) {
             </div>
             <div className="absolute bottom-0 flex w-screen flex-wrap">
                 {otherPlayers.map((player) => (
-                    <PlayerTile className="h-32" key={player.id} {...player} showBorder={false} isSelected={false} />
+                    <PlayerTile className="" key={player.id} {...player} showBorder={false} isSelected={false} />
                 ))}
             </div>
         </div>

@@ -14,12 +14,12 @@ export default function PlayerTile(props: PlayerTileProps) {
     return (
         <div className={`m-1 h-full flex flex-col items-center p-2 ${props.showBorder ? borderClasses : ""} ${props.className}`}>
             <div style={props.alive ? { color: 'white' } : { color: 'red' }} className="font-amongus-log text-2xl text-white">{props.username}</div>
-            <div className="flex-shrink">
+            <div className="flex-shrink min-h-0 min-w-0">
                 <AmongusMan
                     style={{
                         ["--base-color" as any]: props.color, ["--shadow-color" as any]: Color(props.color).darken(0.3)
                     }}
-                    className="player mx-auto max-h-full max-w-full items-center"
+                    className="player mx-auto max-h-full max-w-full object-contain items-center"
                 />
             </div>
 
