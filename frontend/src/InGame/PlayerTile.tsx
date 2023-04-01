@@ -19,7 +19,7 @@ export default function PlayerTile(props: PlayerTileProps) {
                     style={{
                         ["--base-color" as any]: props.color, ["--shadow-color" as any]: Color(props.color).darken(0.3)
                     }}
-                    className="player mx-auto max-h-full max-w-none items-center"
+                    className="player mx-auto max-h-full max-w-full items-center"
                 />
             </div>
 
