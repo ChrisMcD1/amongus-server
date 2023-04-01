@@ -36,21 +36,21 @@ function StatusOverview(props: StatusOverviewProps) {
     const [showRole, setShowRole] = useState(false);
     return (
         <div className="bg-gray-700 flex h-screen w-screen flex-col place-content-center justify-center p-5">
-            <button onClick={() => setShowRole(!showRole)}>
+            <button className="text-white" onClick={() => setShowRole(!showRole)}>
                 {showRole ? "Hide Role" : "Show Role"}
             </button>
             {showRole &&
-                <div className="text-center">I am a {currentPlayer?.role}!</div>
+                <div className="text-center text-white">I am a {currentPlayer?.role}!</div>
             }
-            <h1 className="align-self-start text-center m-4">{currentPlayer?.username} {currentPlayer?.alive === false ? "(I'm a ghost)" : ""}</h1>
-            <button className="my-2" onClick={callEmergencyMeeting}>
+            <h1 className="align-self-start text-center m-4 text-white">{currentPlayer?.username} {currentPlayer?.alive === false ? "(I'm a ghost)" : ""}</h1>
+            <button className="my-2 text-white bg-gray-700" onClick={callEmergencyMeeting}>
                 Call Emergency Meeting!
             </button>
             <PlayerTileArray players={otherPlayers} setSelectedPlayerID={setSelectedPlayerID} selectedPlayerID={selectedPlayerID} />
 
             <div className="grid grid-cols-2 gap-2">
-                <button onClick={killCrewmate}>Kill Target </button>
-                <button onClick={reportBody}>Report Body</button>
+                <button className="bg-gray-700 text-white" onClick={killCrewmate}>Kill Target </button>
+                <button className="bg-gray-700 text-white" onClick={reportBody}>Report Body</button>
             </div>
         </div >
     );
