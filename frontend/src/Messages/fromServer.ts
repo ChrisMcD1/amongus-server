@@ -1,20 +1,19 @@
 import { z } from "zod";
 
-export type PreZodMessage = {
-    type: "ChatMessage" |
-    "AssignedID" |
-    "PlayerStatus" |
-    "GameState" |
-    "PlayerRole" |
-    "PlayerDied" |
-    "SuccessfulKill" |
-    "InvalidAction" |
-    "BodyReported" |
-    "EmergencyMeetingCalled" |
-    "VotingResults" |
-    "GameOver";
-    content: any;
-}
+export const PreZodMessage = z.object({
+    type: z.enum([
+        "gameState",
+        "chatMessage",
+        "assignedID",
+        "playerStatus",
+        "playerRole",
+        "playerDied",
+        "successfulKill",
+        "invalidAction",
+        "votingResults",
+        "gameOver"]),
+    content: z.unknown()
+});
 
 export const ChatMessage = z.object({
     contents: z.string()
@@ -33,11 +32,30 @@ export const PlayerStatus = z.object({
     status: PlayerConnectionStatus
 })
 
-export const GameStateEnum = z.enum(["lobby", "inGame", "reset"]);
+export const GameStateEnum = z.enum(["lobby", "inGame", "meeting", "over"]);
 
 export const GameState = z.object({
-    state: GameStateEnum,
+    type: GameStateEnum,
+    content: z.unknown()
+});
+
+export const MeetingReasonEnum = z.enum(["bodyReported", "emergencyMeetingCalled"]);
+
+export const MeetingReason = z.object({
+    type: MeetingReasonEnum,
+    content: z.unknown()
+});
+
+export const BodyReported = z.object({
+    corpse: z.string(),
+    initiator: z.string()
 })
+
+export const EmergencyMeetingCalled = z.object({
+    initiator: z.string()
+})
+
+export const WinnerEnum = z.enum(["imposters", "crewmates"]);
 
 export const RoleAssignment = z.enum(["imposter", "crewmate"]);
 
@@ -48,15 +66,6 @@ export const SetRole = z.object({
 
 export const PlayerDied = z.object({
     killer: z.string(),
-})
-
-export const BodyReported = z.object({
-    corpse: z.string(),
-    initiator: z.string()
-})
-
-export const EmergencyMeetingCalled = z.object({
-    initiator: z.string()
 })
 
 export const Winner = z.enum(["imposters", "crewmates"]);
