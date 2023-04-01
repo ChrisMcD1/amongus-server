@@ -37,6 +37,7 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
             const gameState = GameState.parse(parsed.content);
             switch (gameState.state) {
                 case "lobby": {
+                    store.dispatch(push("/lobby"));
                     break;
                 }
                 case "inGame": {
