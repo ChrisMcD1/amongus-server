@@ -81,7 +81,7 @@ export default function App() {
                             }
                         />
                         <Route path="/crewmate" element={<Crewmate username={username} />} />
-                        <Route path="/begin" element={<GameBegin username={username} />} />
+                        <Route path="/begin" element={<GameBegin />} />
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/emergency-button" element={<EmergencyButton />} />
                         <Route path="/meeting" element={<Meeting ws={ws} />} />
