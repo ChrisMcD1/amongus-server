@@ -39,9 +39,15 @@ pub async fn join_game(
         return error::ErrorBadRequest("You must input a name ;)").into();
     }
     let player_id = game.send(GetNextUUID {}).await.unwrap();
+
+    let domain = if cfg!(debug_assertions) {
+        "localhost"
+    } else {
+        ".amongus-irl.com"
+    };
+
     let cookie = Cookie::build("player_id", player_id.clone().to_string())
-        .domain(".amongus-irl.com")
-        .domain("localhost")
+        .domain(domain)
         .same_site(actix_web::cookie::SameSite::Strict)
         .secure(true)
         .finish();
