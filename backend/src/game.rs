@@ -141,12 +141,17 @@ impl Game {
         }
     }
     pub fn has_winner(&self) -> Option<Winner> {
-        if self.crewmates_alive() == 0 {
-            Some(Winner::Imposters)
-        } else if self.imposters_alive() == 0 {
-            Some(Winner::Crewmates)
-        } else {
-            None
+        match self.state {
+            GameStateEnum::InGame => {
+                if self.crewmates_alive() == 0 {
+                    Some(Winner::Imposters)
+                } else if self.imposters_alive() == 0 {
+                    Some(Winner::Crewmates)
+                } else {
+                    None
+                }
+            }
+            _ => None,
         }
     }
     pub fn make_all_players_alive_status_known(&mut self) {
