@@ -20,7 +20,6 @@ pub fn config_app(game: Addr<Game>) -> Box<dyn Fn(&mut actix_web::web::ServiceCo
             .service(player_exists)
             .service(start_game)
             .service(reset_game)
-            .service(start_meeting)
             .service(get_player_color);
     })
 }

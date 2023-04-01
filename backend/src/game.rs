@@ -66,16 +66,6 @@ impl Game {
                 player.1.send_outgoing_message(player_status);
             })
     }
-    fn send_message_to_all_users_except(
-        &mut self,
-        msg: OutgoingWebsocketMessage,
-        excluded_player: &Uuid,
-    ) {
-        self.players
-            .iter_mut()
-            .filter(|player| player.1.id != *excluded_player)
-            .for_each(|player| player.1.send_outgoing_message(msg.clone()))
-    }
     pub fn new(settings: GameSettings, seed: u64) -> Self {
         Game {
             state: GameState::Lobby,
