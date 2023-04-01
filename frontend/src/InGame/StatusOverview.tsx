@@ -36,7 +36,7 @@ function StatusOverview(props: StatusOverviewProps) {
     const [showRole, setShowRole] = useState(false);
     return (
         <div className="bg-gray-700 flex h-screen w-screen flex-col place-content-center justify-center p-5">
-            <button className="text-white bg-gray-600" onClick={() => setShowRole(!showRole)}>
+            <button className="mt-5 text-white bg-gray-600" onClick={() => setShowRole(!showRole)}>
                 {showRole ? "Hide Role" : "Show Role"}
             </button>
             {showRole &&
