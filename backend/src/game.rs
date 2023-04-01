@@ -170,7 +170,7 @@ impl Game {
             }
             None => {
                 self.send_message_to_all_users(OutgoingWebsocketMessage::GameState(GameState {
-                    state: GameStateEnum::InGame,
+                    state: self.state.clone(),
                 }))
             }
         }
@@ -248,7 +248,7 @@ impl Game {
                 player.send_outgoing_message(OutgoingWebsocketMessage::GameOver(winner))
             }
             None => player.send_outgoing_message(OutgoingWebsocketMessage::GameState(GameState {
-                state: GameStateEnum::InGame,
+                state: self.state.clone(),
             })),
         }
     }
