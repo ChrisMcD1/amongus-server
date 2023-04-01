@@ -3,7 +3,6 @@ import { selectCurrentPlayer, selectOtherPlayers } from "../state/playersSlice";
 import { useState } from "react";
 import { createEmergencyMeetingMessage, createKillPlayerMessage, createReportBodyMessage } from "../Messages/toServer";
 import PlayerTileArray from "./PlayerTileArray";
-import PlayerTile from "./PlayerTile";
 
 type StatusOverviewProps = { ws: WebSocket | undefined };
 
@@ -36,7 +35,7 @@ function StatusOverview(props: StatusOverviewProps) {
     }
     const [showRole, setShowRole] = useState(false);
     return (
-        <div className="flex h-screen w-screen flex-col place-content-center justify-center p-5">
+        <div className="bg-gray-700 flex h-screen w-screen flex-col place-content-center justify-center p-5">
             <button onClick={() => setShowRole(!showRole)}>
                 {showRole ? "Hide Role" : "Show Role"}
             </button>
