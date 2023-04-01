@@ -9,7 +9,7 @@ type PlayerTileArryProps = {
 
 export default function PlayerTileArray(props: PlayerTileArryProps) {
 
-    return (<div className="justify-left flex flex-wrap place-content-center">
+    return (<div className="justify-left grid grid-cols-3">
         {props.players.map((player) => {
             return (
                 <div key={player.id} onClick={() => props.setSelectedPlayerID(player.id)}>
