@@ -3,6 +3,7 @@ import { z } from "zod";
 export const PreZodMessage = z.object({
     type: z.enum([
         "gameState",
+        "resetGame",
         "chatMessage",
         "assignedID",
         "playerStatus",

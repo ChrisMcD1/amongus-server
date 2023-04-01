@@ -66,11 +66,23 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
                     }
                     break;
                 }
-                //                case "reset": {
-                //                   store.dispatch(push("/"));
-                //                  store.dispatch(deleteAllPlayers());
-                //                 break;
-                //            }
+                case "over": {
+                    const winner = Winner.parse(gameState.content);
+                    switch (winner) {
+                        case "imposters": {
+                            store.dispatch(push("/imposter-victory"))
+                            break;
+                        }
+                        case "crewmates": {
+                            store.dispatch(push("/crewmate-victory"))
+                            break;
+                        }
+                        default: {
+                            throw new Error("Unreachable");
+                        }
+                    }
+                    break;
+                }
                 default: {
                     throw new Error("Received unknown game state!");
                 }
@@ -78,26 +90,14 @@ function processWebsocketMessage(msg: MessageEvent<any>) {
             }
             break;
         }
+        case "resetGame": {
+            store.dispatch(push("/"));
+            store.dispatch(deleteAllPlayers());
+            break;
+        }
         case "playerStatus": {
             let playerStatus = PlayerStatus.parse(parsed.content);
             store.dispatch(updatePlayerStatus(playerStatus))
-            break;
-        }
-        case "gameOver": {
-            const winner = Winner.parse(parsed.content);
-            switch (winner) {
-                case "imposters": {
-                    store.dispatch(push("/imposter-victory"))
-                    break;
-                }
-                case "crewmates": {
-                    store.dispatch(push("/crewmate-victory"))
-                    break;
-                }
-                default: {
-                    throw new Error("Unreachable");
-                }
-            }
             break;
         }
         case "invalidAction": {
