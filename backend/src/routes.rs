@@ -36,7 +36,10 @@ pub async fn join_game(
         return error::ErrorBadRequest("Game has already begun! You cannot join").into();
     }
     let player_id = game.send(GetNextUUID {}).await.unwrap();
-    let cookie = Cookie::new("player_id", player_id.clone().to_string());
+    let cookie = Cookie::build("player_id", player_id.clone().to_string())
+        .domain(".amongus-irl.com")
+        .secure(true)
+        .finish();
 
     game.do_send(RegisterPlayer {
         name: params.username.clone(),
