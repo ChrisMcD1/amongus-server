@@ -12,7 +12,7 @@ export default function PlayerTile(props: PlayerTileProps) {
     var selectedBorderColor = (props.isSelected ? 'border-red-500' : 'border-white');
     var borderClasses = `rounded-2xl border-2 border-solid ${selectedBorderColor}`;
     return (
-        <div className={`m-1 h-full flex flex-col items-center p-2 ${props.showBorder ? borderClasses : ""} ${props.className}`}>
+        <div className={`h-full flex flex-col items-center p-2 ${props.showBorder ? borderClasses : ""} ${props.className}`}>
             <div style={props.alive ? { color: 'white' } : { color: 'red' }} className="font-amongus-log text-2xl text-white">{props.username}</div>
             <div className="flex-shrink min-h-0 min-w-0">
                 <AmongusMan
