@@ -103,18 +103,6 @@ pub async fn start_game(
     "Game Started"
 }
 
-#[post("/start-meeting")]
-pub async fn start_meeting(
-    _req: HttpRequest,
-    _stream: Payload,
-    game: Data<Addr<Game>>,
-) -> impl Responder {
-    game.do_send(StartMeeting {
-        reason: MeetingReason::EmergencyCalled,
-    });
-    "Meeting Started!"
-}
-
 #[derive(Deserialize)]
 pub struct GetPlayerColorParams {
     id: Uuid,

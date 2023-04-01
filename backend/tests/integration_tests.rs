@@ -61,7 +61,7 @@ async fn one_player_assigned_imposter() {
     let player_id = test_fixtures::get_next_id_in_connection(&mut connection).await;
 
     let game_started = OutgoingWebsocketMessage::GameState(GameState {
-        state: GameStateEnum::InGame,
+        state: GameState::InGame,
     });
 
     let assigned_imposter = OutgoingWebsocketMessage::PlayerRole(SetRole {
@@ -358,7 +358,7 @@ async fn reset_game_works_basic() {
     let _ = server.post("/reset-game").send().await;
 
     let game_reset_msg = OutgoingWebsocketMessage::GameState(GameState {
-        state: GameStateEnum::Reset,
+        state: GameState::Reset,
     });
 
     assert_connection_recieves_message(&mut chris_connection, game_reset_msg).await;
