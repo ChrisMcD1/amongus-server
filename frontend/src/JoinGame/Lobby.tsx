@@ -57,7 +57,7 @@ export default function Lobby(props: LobbyProps) {
                     <BlockPicker color={background} onChange={handleChange} />
                 </div>
             </div>
-            <div className="absolute bottom-0 flex">
+            <div className="absolute bottom-0 flex w-screen flex-wrap">
                 {otherPlayers.map((player) => (
                     <PlayerTile className="h-32" key={player.id} {...player} showBorder={false} isSelected={false} />
                 ))}
