@@ -58,6 +58,7 @@ export default function App() {
                 }
             });
     }
+
     if (player_id == null) {
         store.dispatch(push("/"));
     }
