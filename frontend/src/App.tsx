@@ -59,7 +59,7 @@ export default function App() {
             });
     }
 
-    if (player_id == null) {
+    if (player_id == null && !window.location.pathname.includes("dashboard")) {
         store.dispatch(push("/"));
     }
 

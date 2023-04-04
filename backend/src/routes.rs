@@ -87,8 +87,10 @@ fn build_player_id_cookie(id: &str) -> Cookie {
 
     Cookie::build("player_id", id.to_string())
         .domain(domain)
-        .same_site(actix_web::cookie::SameSite::Strict)
+        .path("/")
         .secure(true)
+        .http_only(true)
+        .same_site(actix_web::cookie::SameSite::Strict)
         .finish()
 }
 #[get("/player-rejoin-game")]
