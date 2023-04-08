@@ -536,9 +536,14 @@ impl Handler<StartGame> for Game {
                      This game is in state {:?}",
                 self.state
             );
+            return;
+        }
+        let player_count = self.players.len();
+        if player_count == 0 {
+            println!("Unable to start game with 0 players");
+            return;
         }
         self.set_state_and_update(GameState::InGame);
-        let player_count = self.players.len();
         let mut imposter_count = get_imposter_count(player_count);
         let mut imposters: HashSet<Uuid> = HashSet::new();
         let mut player_roles: BTreeMap<Uuid, RoleAssignment> = self
