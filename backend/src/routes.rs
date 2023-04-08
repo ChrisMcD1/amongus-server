@@ -89,7 +89,6 @@ fn build_player_id_cookie(id: &str) -> Cookie {
         .domain(domain)
         .path("/")
         .secure(true)
-        .http_only(true)
         .same_site(actix_web::cookie::SameSite::Strict)
         .finish()
 }
